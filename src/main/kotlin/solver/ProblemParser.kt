@@ -1,107 +1,117 @@
 package solver
 
-import solver.Problem
-import org.jgrapht.Graph
-import org.jgrapht.generate.CompleteGraphGenerator
-import org.jgrapht.graph.DefaultUndirectedWeightedGraph
-import org.jgrapht.graph.DefaultWeightedEdge
-import org.jgrapht.graph.GraphWalk
+import org.slf4j.LoggerFactory
+import masterthesis.solver.model.Node
+import masterthesis.solver.model.ProblemMetaData
+import masterthesis.solver.model.ProblemSpace
+import masterthesis.solver.model.Solution
 import java.io.File
+
 
 class ProblemParser {
 
-    fun readProblem(): Problem {
+
+    private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
+
+    fun readProblemSpace(): ProblemSpace {
         val path = "src/main/resources/op-solver/build/OPLib/instances/gen1/eil101-gen1-50.oplib"
         val file = File(path).readLines()
-        val problem = Problem(path).apply {
-            nodeMap = mutableMapOf()
-        }
-        val graph: Graph<Node, DefaultWeightedEdge> = DefaultUndirectedWeightedGraph(DefaultWeightedEdge::class.java)
+        val problem = ProblemMetaData(path)
+
+        val nodeMap = HashMap<Int, Node>()
+
         var mode = ReadingMode.META
 
         file.forEach { line ->
-            if (line.trim() == "NODE_COORD_SECTION")
-                mode = ReadingMode.NODES
-            else if (line.trim() == "DEPOT_SECTION")
-                mode = ReadingMode.DEPOT
-            else if (line.trim() == "NODE_SCORE_SECTION")
-                mode = ReadingMode.SCORES
-            else if (mode == ReadingMode.META) {
-                val entry = line.split(":").apply {
-                    line.trim()
+            when (line.trim()) {
+                "NODE_COORD_SECTION" -> mode = ReadingMode.NODES
+                "DEPOT_SECTION" -> mode = ReadingMode.DEPOT
+                "NODE_SCORE_SECTION" -> {
+                    mode = ReadingMode.SCORES
+                    logger.warn("Scores are not read")
                 }
-                if (entry.size == 2) {
-                    when (entry.first().uppercase().trim()) {
-                        "NAME" -> problem.name = entry[1]
-                        "COMMENT" -> problem.comment = entry[1]
-                        "TYPE" -> problem.type = entry[1]
-                        "DIMENSION" -> problem.dimension = entry[1]
-                        "COST_LIMIT" -> problem.costLimit = entry[1].trim()
-                        "EDGE_WEIGHT_TYPE" -> problem.edgeWeightType = entry[1]
-                        else -> throw IllegalArgumentException("Unknown entry: ${entry.first()} in file $path")
+
+                else -> when (mode) {
+                    ReadingMode.META -> {
+                        val entry = line.split(":").apply {
+                            line.trim()
+                        }
+                        if (entry.size == 2) {
+                            mapMetaDataToObject(entry, problem)
+                        } else {
+                            logger.error("Unknown meta entry: $line in file $path")
+                        }
                     }
-                } else {
-                    throw IllegalArgumentException("Unknown entry: $line in file $path")
+
+                    ReadingMode.NODES -> {
+                        val entry = line.split(" ")
+                        if (entry.size == 3) {
+                            val id = entry[0].toInt() - 1
+                            val x = entry[1].toDouble()
+                            val y = entry[2].toDouble()
+                            val isStart = id == 0
+                            val node = Node(id, x, y, startNode = isStart)
+                            nodeMap[id] = node
+                        } else {
+                            logger.error("Unknown entry: $line in file $path")
+                        }
+                    }
+
+                    ReadingMode.SCORES -> Unit
+                    ReadingMode.DEPOT -> Unit
                 }
-            } else if (mode == ReadingMode.NODES) {
-                val entry = line.split(" ")
-                if (entry.size == 3) {
-                    val id = entry[0].toInt()
-                    val x = entry[1].toDouble()
-                    val y = entry[2].toDouble()
-                    val node = Node(id, x, y)
-                    graph.addVertex(node)
-                    problem.nodeMap[id] = node
-                } else {
-                    throw IllegalArgumentException("Unknown entry: $line in file $path")
-                }
-//            } else if (mode == ReadingMode.SCORES) {
-//                val entry = line.split(" ")
-//                if (entry.size == 2) {
-//                    val id = entry[0].toInt()
-//                    val score = entry[1].toDouble()
-//                    val node = graph.vertexSet().find { it.id == id }!!
-//                    node.revenue = score
-//                } else {
-//                    throw IllegalArgumentException("Unknown entry: $line in file $path")
-//                }
             }
         }
-        val graphGenerator = CompleteGraphGenerator<Node, DefaultWeightedEdge>()
-        graphGenerator.generateGraph(graph)
-        graph.edgeSet().forEach { edge ->
-            graph.setEdgeWeight(edge, graph.getEdgeSource(edge).distanceTo(graph.getEdgeTarget(edge)))
-        }
-        problem.graph = graph
-        return problem
+        val distanceMatrix = createDistanceMatrix(nodeMap)
+
+        return ProblemSpace(problem, nodeMap, distanceMatrix)
+
     }
 
-    fun addSolutionToProblem(problem: Problem, solution: Solution, cluster: Int? = null) {
+    private fun createDistanceMatrix(nodeMap: Map<Int, Node>): Array<DoubleArray> {
+        val distanceMatrix = Array(nodeMap.size) { DoubleArray(nodeMap.size) }
 
-        if (cluster == null) {
-            solution.sol.cycle.map {
-                problem.nodeMap[it]
-            }.let {
-                problem.walk = GraphWalk(problem.graph, it, 0.0)
-            }
-        } else {
-            try {
-                if(solution.sol.cycle.first() == 1) {solution.sol.cycle.removeFirst()}
-                solution.sol.cycle.map {
-                    problem.clusterLists[cluster]?.get(it-2) ?: throw IllegalArgumentException("Node $it not found in cluster $cluster")
-                }.let {
-                    problem.clusterWalks[cluster] = GraphWalk(problem.graph, it, 0.0)
+        for (xNode in nodeMap.values) {
+            for (yNode in nodeMap.values) {
+                if (xNode.id == yNode.id) {
+                    distanceMatrix[xNode.id][yNode.id] = 1000000.0
+                    xNode.distanceMap[yNode.id] = 1000000.0
+                    continue
                 }
-            }catch (e: Exception){
-                println("Error: $e")
-                println("Stacktrace: ${e.stackTrace}")
-
-
+                xNode.distanceTo(yNode)
+                    .let {
+                        distanceMatrix[xNode.id][yNode.id] = it
+                        xNode.distanceMap[yNode.id] = it
+                    }
             }
+        }
+        return distanceMatrix
+    }
+
+    private fun mapMetaDataToObject(entry: List<String>, metaData: ProblemMetaData) {
+        when (entry.first().uppercase().trim()) {
+            "NAME" -> metaData.name = entry[1]
+            "COMMENT" -> metaData.comment = entry[1]
+            "TYPE" -> metaData.type = entry[1]
+            "DIMENSION" -> metaData.dimension = entry[1]
+            "COST_LIMIT" -> metaData.costLimit = entry[1].trim()
+            "EDGE_WEIGHT_TYPE" -> metaData.edgeWeightType = entry[1]
+            else -> logger.error("Unknown node entry: ${entry.first()} in file")
         }
     }
 
-    enum class ReadingMode{
+    fun addSolutionToProblem(nodeMap: Map<Int, Node>, solution: Solution): List<Node> {
+        if (solution.sol.cycle.first() == 1) {
+            solution.sol.cycle.removeFirst()
+        }
+        solution.sol.cycle.map {
+            nodeMap[it - 1]
+        }.let {
+            return it.filterNotNull()
+        }
+    }
+
+    enum class ReadingMode {
         META,
         NODES,
         SCORES,
