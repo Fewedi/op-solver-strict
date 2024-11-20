@@ -14,18 +14,32 @@ repositories {
     mavenCentral()
 }
 
+val jacksonVersion = "2.18.1"
+val kandyLetsPlotVersion = "0.7.0"
+val jgraphtVersion = "1.5.2"
+val slf4jVersion = "2.0.16"
+
+
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.1")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.1")
-    // maybe this is not needed
-    implementation("org.jgrapht:jgrapht-core:1.5.2")
-    //implementation("org.jetbrains.kotlinx:dataframe:0.14.1")
-    implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.7.0")
-    testImplementation(kotlin("test"))
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+
+    implementation("org.jgrapht:jgrapht-core:$jgraphtVersion")
+
+    implementation("org.jetbrains.kotlinx:kandy-lets-plot:$kandyLetsPlotVersion")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.slf4j:slf4j-simple:$slf4jVersion")
+
+    testImplementation(kotlin("test"))
 }
 
-
+sourceSets {
+    main {
+        kotlin.srcDirs("src/main/kotlin")
+    }
+}
 
 tasks.test {
     useJUnitPlatform()

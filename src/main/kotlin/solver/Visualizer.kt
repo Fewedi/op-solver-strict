@@ -1,52 +1,29 @@
 package solver
 
 
+import masterthesis.solver.model.Cluster
+import masterthesis.solver.model.Node
 import org.jetbrains.kotlinx.kandy.dsl.categorical
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 import org.jetbrains.kotlinx.kandy.letsplot.layers.points
+import org.slf4j.LoggerFactory
 
 
 class Visualizer {
+    private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
-    fun plotGraph(problem: Problem) {
-        val xs = problem.graph.vertexSet().map { it.x }
-
-        val ys = problem.graph.vertexSet().map { it.y }
-
-        val xpath = problem.walk.vertexList.map { it.x }
-        val ypath = problem.walk.vertexList.map { it.y }
-
-        plot {
-            points {
-                x(xs)
-                y(ys)
-            }
-            line {
-                x(xpath)
-                y(ypath)
-            }
-        }.save("graph.png")
-    }
-
-    fun plotPaths(problem: Problem) {
-
-        val nodes = problem.graph.vertexSet().toList()
-
-        val xs = nodes.map { it.x }
-        val ys = nodes.map { it.y }
-        val cluster = nodes.map { it.cluster }
+    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>) {
+        val xs = clusterMap.values.map { it.x }
+        val ys = clusterMap.values.map { it.y }
+        val cluster = clusterMap.values.map { it.cluster }
 
         val dataset = mapOf("xs" to xs, "ys" to ys, "cluster" to cluster)
-
-
-        val xpaths = problem.clusterWalks.keys.map { clusterN ->
-            clusterN to problem.clusterWalks[clusterN]!!.vertexList.map { it.x }
-        }
-        val ypaths = problem.clusterWalks.keys.map { clusterN ->
-            clusterN to problem.clusterWalks[clusterN]!!.vertexList.map { it.y }
-        }
+        val paths = clusters.map { c ->
+            logger.info("${c.id} ${c.solutionList.map { c.solutionList.map { it.id } }}")
+            c.solutionList.zipWithNext()
+        }.flatten()
 
         plot(dataset) {
             points {
@@ -56,15 +33,13 @@ class Visualizer {
                     scale = categorical()
                 }
             }
-            line {
-                x(xpaths.first().second)
-                y(ypaths.first().second)
+            paths.forEach {
+                line {
+                    x(it.toList().map { it.x })
+                    y(it.toList().map { it.y })
+                }
             }
-            line {
-                x(xpaths.last().second)
-                y(ypaths.last().second)
-            }
-
         }.save("graph.png")
     }
+
 }

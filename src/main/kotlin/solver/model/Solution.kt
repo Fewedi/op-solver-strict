@@ -1,4 +1,4 @@
-package solver
+package masterthesis.solver.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
@@ -14,24 +14,24 @@ data class Solution(
     val pid: Int
 ) {
     data class Param(
-        val time_limit: Long,
+        val timeLimit: Long,
         val init: Int? = null,        // Nullable for SolutionEvolution
         val select: Int? = null,      // Nullable for SolutionEvolution
         val pinit: Int? = null,       // Nullable for SolutionEvolution
-        val it_lim: Int? = null,       // Nullable for SolutionInit
-        val pop_size: Int? = null,     // Nullable for SolutionInit
-        val pop_stop: Int? = null,     // Nullable for SolutionInit
+        val itLim: Int? = null,       // Nullable for SolutionInit
+        val popSize: Int? = null,     // Nullable for SolutionInit
+        val popStop: Int? = null,     // Nullable for SolutionInit
         val d2d: Int? = null,         // Nullable for SolutionInit
         val nparsel: Int? = null,     // Nullable for SolutionInit
         val pmut: Double? = null,     // Nullable for SolutionInit
-        val len_improve1: Int? = null, // Nullable for SolutionInit
-        val len_improve2: Int? = null  // Nullable for SolutionInit
+        val lenImprove1: Int? = null, // Nullable for SolutionInit
+        val lenImprove2: Int? = null  // Nullable for SolutionInit
     )
 
     data class Stats(
         val time: Int,
         val it: Int? = null,                   // Nullable for SolutionInit
-        val time_infeas_recover: Int? = null     // Nullable for SolutionInit
+        val timeInfeasRecover: Int? = null     // Nullable for SolutionInit
     )
 
     data class Prob(
@@ -41,9 +41,9 @@ data class Solution(
     )
 
     data class Sol(
-        @JsonProperty("val") val value: Int,        // "val" is a reserved keyword in Kotlin, so using "val_"
+        @JsonProperty("val") val value: Int,
         val cap: Int,
-        val sol_ns: Int,
+        val solNs: Int,
         val lb: Int,
         val ub: Double,
         val cycle: MutableList<Int>
