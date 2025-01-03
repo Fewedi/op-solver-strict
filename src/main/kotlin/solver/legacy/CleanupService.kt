@@ -1,4 +1,4 @@
-package masterthesis.solver
+package masterthesis.solver.legacy
 
 import org.slf4j.LoggerFactory
 import java.io.File

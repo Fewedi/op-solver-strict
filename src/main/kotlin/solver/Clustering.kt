@@ -1,5 +1,6 @@
 package masterthesis.solver
 
+import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
 import solver.Visualizer
@@ -12,7 +13,7 @@ class Clustering {
 
     fun cluster(nodeMap: Map<Int, Node>, costLimit: Int): Map<Int, List<Node>> {
         val nodes = nodeMap.values
-        val meanClusterSize = 20
+        val meanClusterSize = ConfigProvider.config.clusterSize
         val k = nodes.size / meanClusterSize
         val clusters = applyKmeans(nodes, k)
         return clusters.entries.groupBy({ it.value }, { it.key })

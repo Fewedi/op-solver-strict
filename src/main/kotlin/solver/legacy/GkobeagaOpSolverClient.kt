@@ -1,7 +1,7 @@
-package solver
+package masterthesis.solver.legacy
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import masterthesis.solver.model.Solution
+import masterthesis.solver.model.GkobeagaSolution
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.PrintWriter
@@ -18,7 +18,7 @@ class GkobeagaOpSolverClient {
         process.waitFor()
     }
 
-    fun solve(pathProblem: String, objectMapper: ObjectMapper): Solution? {
+    fun solve(pathProblem: String, objectMapper: ObjectMapper): GkobeagaSolution? {
         val pathSolver = ("./src/main/resources/op-solver/build/src/op-solver")
 
         runCommand(listOf(pathSolver, "opt", pathProblem))
@@ -26,7 +26,7 @@ class GkobeagaOpSolverClient {
         val solutionFile = File("./stats.json")
 
         val solutions = solutionFile.readLines().map {
-            objectMapper.readValue(it, Solution::class.java)
+            objectMapper.readValue(it, GkobeagaSolution::class.java)
         }
         PrintWriter(solutionFile).apply {
             this.print("")

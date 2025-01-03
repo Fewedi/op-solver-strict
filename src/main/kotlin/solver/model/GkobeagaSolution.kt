@@ -2,7 +2,7 @@ package masterthesis.solver.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class Solution(
+data class GkobeagaSolution(
     val prob: Prob,
     val sol: Sol,
     val param: Param,

@@ -1,0 +1,35 @@
+activeProfile: gurobiWithFixedEndPoints
+
+profiles:
+    oneStartPoint: # not feasible for ea4op
+        solver: ea4op
+        clustering: kmeans
+        startEntries: 1
+        dummyStartNode: none
+        dummyStartNodeMethod: none
+        dummyStartNodeFactor: 0.0
+        clusterSize: 20
+    noStartPoints:
+        solver: ea4op
+        clustering: kmeans
+        startEntries: 0
+        dummyStartNode: none
+        dummyStartNodeMethod: none
+        dummyStartNodeFactor: 0.0
+        clusterSize: 20
+    dummyStartNodeCluster: # dummy start node = previous cluster
+        solver: ea4op
+        clustering: kmeans
+        startEntries: 0
+        dummyStartNode: cluster
+        dummyStartNodeMethod: mean
+        dummyStartNodeFactor: 2.0
+        clusterSize: 20
+    gurobiWithFixedEndPoints:
+        solver: gurobi
+        clustering: kmeans
+        startEntries: 0
+        dummyStartNode: none
+        dummyStartNodeMethod: none
+        dummyStartNodeFactor: 0.0
+        clusterSize: 10

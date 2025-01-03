@@ -1,10 +1,7 @@
 package solver
 
+import masterthesis.solver.model.*
 import org.slf4j.LoggerFactory
-import masterthesis.solver.model.Node
-import masterthesis.solver.model.ProblemMetaData
-import masterthesis.solver.model.ProblemSpace
-import masterthesis.solver.model.Solution
 import java.io.File
 
 
@@ -65,7 +62,6 @@ class ProblemParser {
         val distanceMatrix = createDistanceMatrix(nodeMap)
 
         return ProblemSpace(problem, nodeMap, distanceMatrix)
-
     }
 
     private fun createDistanceMatrix(nodeMap: Map<Int, Node>): Array<DoubleArray> {
@@ -100,7 +96,7 @@ class ProblemParser {
         }
     }
 
-    fun addSolutionToProblem(nodeMap: Map<Int, Node>, solution: Solution): List<Node> {
+    fun addSolutionToProblem(nodeMap: Map<Int, Node>, solution: GkobeagaSolution): List<Node> {
         if (solution.sol.cycle.first() == 1) {
             solution.sol.cycle.removeFirst()
         }
@@ -109,6 +105,25 @@ class ProblemParser {
         }.let {
             return it.filterNotNull()
         }
+    }
+
+    fun addSolutionToProblem(nodeMap: List<Node>, solution: GurobiSolution, startNode: Node, finalNode: Node?): List<Node> {
+        val regex = Regex("""x\[(\d+)]\[(\d+)]""")
+        val nodeSolution = mutableListOf<Node>()
+        val solutionMap = mutableMapOf<Node,Node>()
+        solution.vars.forEach{ entry ->
+            regex.matchEntire(entry.varName).let { match ->
+                if (match != null) {
+                    solutionMap[nodeMap[match.groupValues[1].toInt()]!!] = nodeMap[match.groupValues[2].toInt()]
+                }
+            }
+        }
+        var currentNode = startNode
+        while (nodeSolution.size < nodeMap.size && currentNode != finalNode) {
+            nodeSolution.add(currentNode)
+            currentNode = solutionMap[currentNode]!!
+        }
+        return nodeSolution
     }
 
     enum class ReadingMode {
