@@ -38,11 +38,9 @@ class Solver {
         cleanupService.cleanUp()
         val problemSpace = problemParser.readProblemSpace()
         val clusterMap = clustering.cluster(problemSpace.nodeMap, problemSpace.metaData.costLimit.toInt())
-        val clusterPath = tSPForCluster.provideClusterPath(clusterMap).apply {
-            vertexList.removeFirst()
-        }
-        val clusters = clusterPath.vertexList.map { cluster ->
-            val costLimit = problemSpace.metaData.costLimit.toInt() / (clusterPath.vertexList.size)
+        val clusterPath = tSPForCluster.provideClusterPath(clusterMap)
+        val clusters = clusterPath.map { cluster ->
+            val costLimit = problemSpace.metaData.costLimit.toInt() / (clusterPath.size)
             when (ConfigProvider.config.solver) {
                 Solver.gurobi -> {
                     solveWithGurobi(cluster, costLimit)
@@ -59,8 +57,10 @@ class Solver {
 
     private fun solveWithGurobi(cluster: Cluster, costLimit: Int) {
         try {
-            val solution = gurobiOpSolverClient.solve(objectMapper, cluster.nodes, cluster.startNodes.first(), cluster.endNodes.first(), costLimit)
-            cluster.solutionList = problemParser.addSolutionToProblem(cluster.nodes, solution, cluster.startNodes.first(), cluster.endNodes.firstOrNull())
+            val startNodeIndex = cluster.nodes.indexOf(cluster.startNodes.first())
+            val preparedList = listOf(cluster.nodes[startNodeIndex]) + cluster.nodes.filterIndexed { index, _ -> index != startNodeIndex} + listOf(cluster.endNodes.first())
+            val solution = gurobiOpSolverClient.solve(objectMapper, preparedList, cluster.startNodes.first(), cluster.endNodes.first(), costLimit)
+            cluster.solutionList = problemParser.addSolutionToProblem(preparedList, solution, cluster.startNodes.first(), cluster.endNodes.first())
             logger.info("Cluster ${cluster.id} solved with solution: ${cluster.solutionList.map { it.id }}")
         } catch (e: Exception) {
             logger.error("Cluster ${cluster.id} failed with error: ${e.message}")

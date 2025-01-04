@@ -69,6 +69,10 @@ class GurobiClient {
         startNodeIndex: Int = 0,
         endNodeIndex: Int = nodes.size - 1
     ) {
+        val startNodeIndex = 0
+        logger.info(startNodeIndex.toString())
+        val endNodeIndex = nodes.size - 1
+        val initialSolution = listOf(startNodeIndex, endNodeIndex)
         val x = Array(nodes.size) { i ->
             Array(nodes.size) { j ->
                 model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "x[$i][$j]")
@@ -129,7 +133,7 @@ class GurobiClient {
         // 2
         // each node should have exactly one incoming and one outgoing edge or none
         for (k in 1 until nodes.size - 1) {
-
+            if (k == startNodeIndex || k == endNodeIndex) continue
             val maxOutgoingEdgesExpression = GRBLinExpr().apply {
                 for (j in 1 until nodes.size) {
                     addTerm(1.0, x[k][j])
@@ -191,14 +195,19 @@ class GurobiClient {
     }
 
     fun solve(objectMapper: ObjectMapper, nodes: List<Node>, startNode: Node, finalNode: Node, budget: Int): GurobiSolution {
-
-        val costMatrix = Array(nodes.size) { i ->
-            DoubleArray(nodes.size) { j ->
-                nodes[i].distanceTo(nodes[j])
-            }
-        }
         val startNodeIndex = nodes.indexOf(startNode)
         val endNodeIndex = nodes.indexOf(finalNode)
+        val preparedNodes = nodes
+        val isLastCluster = nodes.last().id == -1
+        val costMatrix = Array(preparedNodes.size) { i ->
+            DoubleArray(preparedNodes.size) { j ->
+                if ((i == preparedNodes.size - 1 || j == preparedNodes.size - 1) && isLastCluster) {
+                    0.0
+                } else {
+                    preparedNodes[i].distanceTo(preparedNodes[j])
+                }
+            }
+        }
 
         val env = GRBEnv()
         env.start()
@@ -206,8 +215,9 @@ class GurobiClient {
         model[GRB.IntParam.OutputFlag] = 0
         model[GRB.DoubleParam.MIPGap] = 0.05
 
-        val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, startNodeIndex, endNodeIndex)
-        setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution, startNodeIndex, endNodeIndex)
+
+        val initialSolution = getInitialSolution(preparedNodes, budget.toDouble(), costMatrix, startNodeIndex, endNodeIndex)
+        setupModel(preparedNodes, costMatrix, budget.toDouble(), model, initialSolution, startNodeIndex, endNodeIndex)
 
         model.optimize()
         val gurobiSolution = model.jsonSolution.let {

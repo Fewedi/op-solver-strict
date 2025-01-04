@@ -15,9 +15,10 @@ class StartNodeProvider {
         } ?: throw IllegalStateException("No node found")
     }
 
-    fun findEndNode(currentCluster: Cluster): Node? {
+    fun findEndNode(currentCluster: Cluster): Node {
+
         if (currentCluster.nextCluster == null) {
-            return null
+            return Node(-1, -1.0, -1.0)
         } else {
             return currentCluster.nextCluster!!.startNodes.first()
         }

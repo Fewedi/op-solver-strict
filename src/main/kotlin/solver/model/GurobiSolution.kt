@@ -8,27 +8,27 @@ data class GurobiSolution(
 )
 
 data class SolutionInfo(
-    val status: Long,
+    val status: Int,
     val runtime: Double,
     val work: Double,
-    val objVal: Long,
-    val objBound: Long,
-    val objBoundC: Long,
+    val objVal: Int,
+    val objBound: Int,
+    val objBoundC: Int,
     @JsonProperty("MIPGap") val value: Double,
     val mipGap: Double,
-    val intVio: Long,
-    val boundVio: Long,
-    val constrVio: Long,
-    val iterCount: Long,
-    val barIterCount: Long,
-    val nodeCount: Long,
-    val solCount: Long,
-    val poolObjBound: Long,
-    val poolObjVal: List<Long>
+    val intVio: Int,
+    val boundVio: Int,
+    val constrVio: Int,
+    val iterCount: Int,
+    val barIterCount: Int,
+    val nodeCount: Int,
+    val solCount: Int,
+    val poolObjBound: Int,
+    val poolObjVal: List<Int>
 )
 
 data class Variable(
     val varName: String,
-    val x: Long
+    val x: Int
 )
 

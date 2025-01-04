@@ -107,14 +107,14 @@ class ProblemParser {
         }
     }
 
-    fun addSolutionToProblem(nodeMap: List<Node>, solution: GurobiSolution, startNode: Node, finalNode: Node?): List<Node> {
+    fun addSolutionToProblem(nodeMap: List<Node>, solution: GurobiSolution, startNode: Node, finalNode: Node): List<Node> {
         val regex = Regex("""x\[(\d+)]\[(\d+)]""")
         val nodeSolution = mutableListOf<Node>()
         val solutionMap = mutableMapOf<Node,Node>()
         solution.vars.forEach{ entry ->
             regex.matchEntire(entry.varName).let { match ->
                 if (match != null) {
-                    solutionMap[nodeMap[match.groupValues[1].toInt()]!!] = nodeMap[match.groupValues[2].toInt()]
+                    solutionMap[nodeMap[match.groupValues[1].toInt()]!!] = nodeMap[match.groupValues[2].toInt()]!!
                 }
             }
         }
