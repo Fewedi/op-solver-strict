@@ -59,7 +59,7 @@ class Solver {
         try {
             val startNodeIndex = cluster.nodes.indexOf(cluster.startNodes.first())
             val preparedList = listOf(cluster.nodes[startNodeIndex]) + cluster.nodes.filterIndexed { index, _ -> index != startNodeIndex} + listOf(cluster.endNodes.first())
-            val solution = gurobiOpSolverClient.solve(objectMapper, preparedList, cluster.startNodes.first(), cluster.endNodes.first(), costLimit)
+            val solution = gurobiOpSolverClient.solve(objectMapper, preparedList, costLimit)
             cluster.solutionList = problemParser.addSolutionToProblem(preparedList, solution, cluster.startNodes.first(), cluster.endNodes.first())
             logger.info("Cluster ${cluster.id} solved with solution: ${cluster.solutionList.map { it.id }}")
         } catch (e: Exception) {

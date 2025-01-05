@@ -21,15 +21,13 @@ class Visualizer {
         val startPosY = clusters.map { it.startNodes.first().y }
         val endPosX = clusters.map { it.endNodes.first().x }
         val endPosY = clusters.map { it.endNodes.first().y }
-        val clusterDataSet = mapOf("startPosX" to startPosX, "startPosY" to startPosY, "endPosX" to endPosX, "endPosY" to endPosY)
 
         val xs = clusterMap.values.map { it.x }
         val ys = clusterMap.values.map { it.y }
         val cluster = clusterMap.values.map { it.cluster }
 
-        val dataset = mapOf("xs" to xs, "ys" to ys, "cluster" to cluster)
         val paths = clusters.map { c ->
-            logger.info("${c.id} ${c.solutionList.map { c.solutionList.map { it.id } }}")
+            logger.info("${c.id} ${c.solutionList.map { it.id } }")
             if (c.endNodes.first().id == -1) {
                 c.solutionList
             }else {

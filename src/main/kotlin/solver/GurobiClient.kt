@@ -24,7 +24,6 @@ class GurobiClient {
                 Double.NEGATIVE_INFINITY
             } else {
                 costM[newestNodeIndex][i] * nodes[i].revenue - costM[i][endNodeIndex] * meanRevenue
-                //todo: check if this is correct
             }
         }
         return scores.withIndex()
@@ -41,16 +40,16 @@ class GurobiClient {
     ): List<Int> {
 
         val solution: MutableList<Int> = mutableListOf() // Start with task 0
-        var T = 0.0
+        var t = 0.0
 
         val meanRevenue = nodes.map { it.revenue }.average()
         var toAdd = startNodeIndex
         while ((
                     solution.size <= 1 ||
-                            T + costM[solution.last()][toAdd] + costM[toAdd][finalNodeIndex] < timeBudget
+                            t + costM[solution.last()][toAdd] + costM[toAdd][finalNodeIndex] < timeBudget
                     ) && solution.size < nodes.size + 1
         ) {
-            if(solution.isNotEmpty()) T += costM[solution.last()][toAdd]
+            if(solution.isNotEmpty()) t += costM[solution.last()][toAdd]
             solution.add(toAdd)
 
             toAdd = getTaskToAdd(solution, costM, nodes, finalNodeIndex, toAdd, meanRevenue)
@@ -65,14 +64,10 @@ class GurobiClient {
         costMatrix: Array<DoubleArray>,
         budget: Double,
         model: GRBModel,
-        initialSolution: List<Int>,
-        startNodeIndex: Int = 0,
-        endNodeIndex: Int = nodes.size - 1
+        initialSolution: List<Int>
     ) {
         val startNodeIndex = 0
-        logger.info(startNodeIndex.toString())
         val endNodeIndex = nodes.size - 1
-        val initialSolution = listOf(startNodeIndex, endNodeIndex)
         val x = Array(nodes.size) { i ->
             Array(nodes.size) { j ->
                 model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "x[$i][$j]")
@@ -83,7 +78,7 @@ class GurobiClient {
         }
 
         for (i in 0 until initialSolution.size - 1) {
-            x[initialSolution[i]][initialSolution[i + 1]].set(GRB.DoubleAttr.Start, 1.0)
+            x[initialSolution[i]][initialSolution[i + 1]][GRB.DoubleAttr.Start] = 1.0
         }
 
         // 0
@@ -194,17 +189,14 @@ class GurobiClient {
         // 6 done implicit in definition of x
     }
 
-    fun solve(objectMapper: ObjectMapper, nodes: List<Node>, startNode: Node, finalNode: Node, budget: Int): GurobiSolution {
-        val startNodeIndex = nodes.indexOf(startNode)
-        val endNodeIndex = nodes.indexOf(finalNode)
-        val preparedNodes = nodes
+    fun solve(objectMapper: ObjectMapper, nodes: List<Node>, budget: Int): GurobiSolution {
         val isLastCluster = nodes.last().id == -1
-        val costMatrix = Array(preparedNodes.size) { i ->
-            DoubleArray(preparedNodes.size) { j ->
-                if ((i == preparedNodes.size - 1 || j == preparedNodes.size - 1) && isLastCluster) {
+        val costMatrix = Array(nodes.size) { i ->
+            DoubleArray(nodes.size) { j ->
+                if ((i == nodes.size - 1 || j == nodes.size - 1) && isLastCluster) {
                     0.0
                 } else {
-                    preparedNodes[i].distanceTo(preparedNodes[j])
+                    nodes[i].distanceTo(nodes[j])
                 }
             }
         }
@@ -215,9 +207,8 @@ class GurobiClient {
         model[GRB.IntParam.OutputFlag] = 0
         model[GRB.DoubleParam.MIPGap] = 0.05
 
-
-        val initialSolution = getInitialSolution(preparedNodes, budget.toDouble(), costMatrix, startNodeIndex, endNodeIndex)
-        setupModel(preparedNodes, costMatrix, budget.toDouble(), model, initialSolution, startNodeIndex, endNodeIndex)
+        val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, 0, nodes.size - 1)
+        setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution)
 
         model.optimize()
         val gurobiSolution = model.jsonSolution.let {

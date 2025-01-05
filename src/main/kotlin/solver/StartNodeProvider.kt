@@ -7,20 +7,20 @@ class StartNodeProvider {
 
 
     fun findStartNode(currentCluster: Cluster): Node {
-        if (currentCluster.prevCluster == null) {
-            return currentCluster.nodes.first()
+        return if (currentCluster.prevCluster == null) {
+            currentCluster.nodes.first()
+        } else {
+            currentCluster.nodes.minByOrNull { node ->
+                node.distanceTo(currentCluster.prevCluster!!)
+            } ?: throw IllegalStateException("No node found")
         }
-        return currentCluster.nodes.minByOrNull { node ->
-            node.distanceTo(currentCluster.prevCluster!!)
-        } ?: throw IllegalStateException("No node found")
     }
 
     fun findEndNode(currentCluster: Cluster): Node {
-
-        if (currentCluster.nextCluster == null) {
-            return Node(-1, -1.0, -1.0)
+        return if (currentCluster.nextCluster == null) {
+            Node(-1, -1.0, -1.0)
         } else {
-            return currentCluster.nextCluster!!.startNodes.first()
+            currentCluster.nextCluster!!.startNodes.first()
         }
     }
 }
