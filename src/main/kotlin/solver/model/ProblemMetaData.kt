@@ -7,4 +7,5 @@ data class ProblemMetaData(val path: String) {
     lateinit var dimension: String
     lateinit var costLimit: String
     lateinit var edgeWeightType: String
+    lateinit var startNode: String
 }

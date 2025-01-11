@@ -1,7 +1,10 @@
 package masterthesis.solver
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.gurobi.gurobi.*
+import com.gurobi.gurobi.GRB
+import com.gurobi.gurobi.GRBEnv
+import com.gurobi.gurobi.GRBLinExpr
+import com.gurobi.gurobi.GRBModel
 import masterthesis.solver.model.GurobiSolution
 import masterthesis.solver.model.Node
 
@@ -49,7 +52,7 @@ class GurobiClient {
                             t + costM[solution.last()][toAdd] + costM[toAdd][finalNodeIndex] < timeBudget
                     ) && solution.size < nodes.size + 1
         ) {
-            if(solution.isNotEmpty()) t += costM[solution.last()][toAdd]
+            if (solution.isNotEmpty()) t += costM[solution.last()][toAdd]
             solution.add(toAdd)
 
             toAdd = getTaskToAdd(solution, costM, nodes, finalNodeIndex, toAdd, meanRevenue)
@@ -205,7 +208,7 @@ class GurobiClient {
         env.start()
         val model = GRBModel(env)
         model[GRB.IntParam.OutputFlag] = 0
-        model[GRB.DoubleParam.MIPGap] = 0.05
+        //model[GRB.DoubleParam.MIPGap] = 0.05
 
         val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, 0, nodes.size - 1)
         setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution)

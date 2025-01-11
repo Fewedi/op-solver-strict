@@ -7,6 +7,8 @@ class CleanupService {
     private val logger = LoggerFactory.getLogger(CleanupService::class.java)
     fun cleanUp() {
         cleanupFilesWithExtension("./src/main/resources", ".oplib")
+        cleanupFilesWithExtension("./", "TSP_problem")
+        cleanupFilesWithExtension("./", "TSP_problem.sol")
     }
 
     private fun cleanupFilesWithExtension(directoryPath: String, fileExtension: String) {

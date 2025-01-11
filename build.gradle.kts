@@ -16,19 +16,20 @@ repositories {
 
 val jacksonVersion = "2.18.1"
 val kandyLetsPlotVersion = "0.7.0"
-val jgraphtVersion = "1.5.2"
 val slf4jVersion = "2.0.16"
 val gurobiVersion = "12.0.0"
+val kotlinCsvVersion = "1.10.0"
 
 
 dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
-    implementation("org.jgrapht:jgrapht-core:$jgraphtVersion")
 
     implementation("org.jetbrains.kotlinx:kandy-lets-plot:$kandyLetsPlotVersion")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+    implementation("com.jsoizo:kotlin-csv:$kotlinCsvVersion")
 
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.slf4j:slf4j-simple:$slf4jVersion")

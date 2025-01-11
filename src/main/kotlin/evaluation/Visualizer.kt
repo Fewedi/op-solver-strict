@@ -1,4 +1,4 @@
-package solver
+package masterthesis.evaluation
 
 
 import masterthesis.solver.model.Cluster
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
-    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>) {
+    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String) {
 
         val startPosX = clusters.map { it.startNodes.first().x }
         val startPosY = clusters.map { it.startNodes.first().y }
@@ -65,7 +65,7 @@ class Visualizer {
                     y(it.toList().map { it.y })
                 }
             }
-        }.save("graph.png")
+        }.save("$name.png")
     }
 
 }

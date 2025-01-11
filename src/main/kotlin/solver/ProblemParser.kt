@@ -1,6 +1,10 @@
 package solver
 
-import masterthesis.solver.model.*
+import masterthesis.solver.legacy.GkobeagaSolution
+import masterthesis.solver.model.GurobiSolution
+import masterthesis.solver.model.Node
+import masterthesis.solver.model.ProblemMetaData
+import masterthesis.solver.model.ProblemSpace
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -10,8 +14,8 @@ class ProblemParser {
 
     private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
 
-    fun readProblemSpace(): ProblemSpace {
-        val path = "src/main/resources/op-solver/build/OPLib/instances/gen1/eil101-gen1-50.oplib"
+    fun readProblemSpace(folderName: String): ProblemSpace {
+        val path = "src/main/resources/op-solver/build/OPLib/instances/gen1/$folderName.oplib"
         val file = File(path).readLines()
         val problem = ProblemMetaData(path)
 
@@ -19,6 +23,7 @@ class ProblemParser {
 
         var mode = ReadingMode.META
 
+        var readStartNode = false
         file.forEach { line ->
             when (line.trim()) {
                 "NODE_COORD_SECTION" -> mode = ReadingMode.NODES
@@ -55,7 +60,20 @@ class ProblemParser {
                     }
 
                     ReadingMode.SCORES -> Unit
-                    ReadingMode.DEPOT -> Unit
+                    ReadingMode.DEPOT -> {
+                        if (!readStartNode) {
+                            val entry = line.split(" ")
+                            if (entry.size == 1) {
+                                val id = entry[0].toInt() - 1
+                                nodeMap[id]?.let {
+                                    it.startNode = true
+                                    readStartNode = true
+                                    problem.startNode = entry[0]
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         }
@@ -107,11 +125,11 @@ class ProblemParser {
         }
     }
 
-    fun addSolutionToProblem(nodeMap: List<Node>, solution: GurobiSolution, startNode: Node, finalNode: Node): List<Node> {
+    fun <T> addSolutionToProblem(nodeMap: List<T>, solution: GurobiSolution, startNode: T, finalNode: T): List<T> {
         val regex = Regex("""x\[(\d+)]\[(\d+)]""")
-        val nodeSolution = mutableListOf<Node>()
-        val solutionMap = mutableMapOf<Node,Node>()
-        solution.vars.forEach{ entry ->
+        val nodeSolution = mutableListOf<T>()
+        val solutionMap = mutableMapOf<T, T>()
+        solution.vars.forEach { entry ->
             regex.matchEntire(entry.varName).let { match ->
                 if (match != null) {
                     solutionMap[nodeMap[match.groupValues[1].toInt()]!!] = nodeMap[match.groupValues[2].toInt()]!!
@@ -119,7 +137,7 @@ class ProblemParser {
             }
         }
         var currentNode = startNode
-        while (nodeSolution.size < nodeMap.size && currentNode != finalNode) {
+        while (nodeSolution.size < nodeMap.size && (currentNode != finalNode || nodeSolution.isEmpty())) {
             nodeSolution.add(currentNode)
             currentNode = solutionMap[currentNode]!!
         }

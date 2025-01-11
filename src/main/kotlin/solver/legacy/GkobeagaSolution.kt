@@ -1,4 +1,4 @@
-package masterthesis.solver.model
+package masterthesis.solver.legacy
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

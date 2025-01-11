@@ -1,9 +1,9 @@
 package masterthesis.solver
 
+import masterthesis.evaluation.Visualizer
 import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
-import solver.Visualizer
 import kotlin.math.sqrt
 
 class Clustering {

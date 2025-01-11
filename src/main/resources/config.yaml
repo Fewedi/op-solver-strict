@@ -32,4 +32,4 @@ profiles:
         dummyStartNode: none
         dummyStartNodeMethod: none
         dummyStartNodeFactor: 0.0
-        clusterSize: 25
+        clusterSize: 20

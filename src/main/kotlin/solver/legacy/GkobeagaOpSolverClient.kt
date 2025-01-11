@@ -1,7 +1,6 @@
 package masterthesis.solver.legacy
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import masterthesis.solver.model.GkobeagaSolution
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.PrintWriter
