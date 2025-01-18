@@ -4,6 +4,7 @@ package masterthesis.evaluation
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import org.jetbrains.kotlinx.kandy.dsl.categorical
+import org.jetbrains.kotlinx.kandy.dsl.continuous
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
@@ -19,12 +20,13 @@ class Visualizer {
 
         val startPosX = clusters.map { it.startNodes.first().x }
         val startPosY = clusters.map { it.startNodes.first().y }
-        val endPosX = clusters.map { it.endNodes.first().x }
-        val endPosY = clusters.map { it.endNodes.first().y }
+        val endPosX = clusters.filter { it.endNodes.first().id != -1 }.map { it.endNodes.first().x }
+        val endPosY = clusters.filter { it.endNodes.first().id != -1 }.map { it.endNodes.first().y }
 
         val xs = clusterMap.values.map { it.x }
         val ys = clusterMap.values.map { it.y }
         val cluster = clusterMap.values.map { it.cluster }
+        val revenue = clusterMap.values.map { it.revenue }
 
         val paths = clusters.map { c ->
             logger.info("${c.id} ${c.solutionList.map { it.id } }")
@@ -55,6 +57,9 @@ class Visualizer {
                 y(ys)
                 color(cluster) {
                     scale = categorical()
+                }
+                alpha(revenue) {
+                    scale = continuous(range = (0.4..1.0))
                 }
             }
 

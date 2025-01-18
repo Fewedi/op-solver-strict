@@ -28,10 +28,17 @@ class TSPForCluster {
             clusterList,
             startCluster
         )
+
+        logger.info("Concord solution: ${finalPath.map { it.id }}")
+
+        return finalPath
+    }
+
+    fun setDistancesToNextClusterAndProvideStartNodes(finalPath: List<Cluster>) {
         finalPath.forEachIndexed { index, cluster ->
             if (index != finalPath.size - 1) {
                 cluster.nextCluster = finalPath[index + 1]
-                if (ConfigProvider.config.dummyStartNodeMethod == AgregationMethod.MEAN) {
+                if (ConfigProvider.config.gurobi!!.clusterStartNode == AgregationMethod.MEAN) {
                     cluster.nodes.forEach { node ->
                         node.distanceToNextCluster = node.distanceTo(cluster.nextCluster!!)
                     }
@@ -39,7 +46,7 @@ class TSPForCluster {
             }
             if (index != 0) {
                 cluster.prevCluster = finalPath[index - 1]
-                if (ConfigProvider.config.dummyStartNodeMethod == AgregationMethod.MEAN) {
+                if (ConfigProvider.config.gurobi!!.clusterStartNode == AgregationMethod.MEAN) {
                     cluster.nodes.forEach { node ->
                         node.distanceToPrevCluster = node.distanceTo(cluster.prevCluster!!)
                     }
@@ -50,9 +57,5 @@ class TSPForCluster {
         finalPath.forEach { cluster ->
             cluster.endNodes.add(startNodeProvider.findEndNode(cluster))
         }
-
-        logger.info("Concord solution: ${finalPath.map { it.id }}")
-
-        return finalPath
     }
 }

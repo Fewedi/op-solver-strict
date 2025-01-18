@@ -6,14 +6,32 @@ data class RootConfig (
 )
 
 data class ProfileConfig (
+    val testSet: TestSet,
     val solver: Solver,
+    val ea4op: Ea4opConfig?,
+    val gurobi: GurobiConfig?,
     val clustering: ClusteringMethod,
+    val budgetDistribution: BudgetDistributionMethod,
+    val revenueDistribution: RevenueDistributionType,
+    val clusterSize: Int
+)
+
+data class Ea4opConfig (
     val startEntries: Int,
     val dummyStartNode: DummyStartNode,
     val dummyStartNodeMethod: AgregationMethod,
     val dummyStartNodeFactor: Double,
-    val clusterSize: Int
 )
+
+data class GurobiConfig (
+    val clusterStartNode: AgregationMethod
+)
+
+enum class TestSet {
+    ONE,
+    BASE,
+    ALL
+}
 
 enum class Solver {
     gurobi,
@@ -40,5 +58,18 @@ enum class AgregationMethod {
 
 enum class ClusteringMethod {
     KMEANS,
-    NONE
+    KMEANSANDCORRECTLATER,
+    KMEANSUPPERBOUND,
+    KMEANSCAPACITATED,
+    KMEANSCAPACITATEDCUSTOM
+}
+
+enum class RevenueDistributionType {
+    RANDOM,
+    FLAT
+}
+
+enum class BudgetDistributionMethod {
+    ELZEIN,
+    NAIVE
 }

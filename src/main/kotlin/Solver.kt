@@ -3,9 +3,9 @@ package masterthesis
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import masterthesis.evaluation.Evaluater
 import masterthesis.evaluation.Visualizer
-import masterthesis.solver.Clustering
-import masterthesis.solver.GurobiClient
-import masterthesis.solver.TSPForCluster
+import masterthesis.solver.*
+import masterthesis.solver.config.BudgetDistributionMethod
+import masterthesis.solver.config.ClusteringMethod
 import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.config.Solver
 import masterthesis.solver.legacy.*
@@ -21,10 +21,10 @@ class Solver {
     private val cleanupService = CleanupService()
     private val problemParser = ProblemParser()
     private val clustering = Clustering()
-    private val problemWriter: ProblemWriter = when (ConfigProvider.config.startEntries) {
+    private val problemWriter: ProblemWriter? = when (ConfigProvider.config.ea4op?.startEntries) {
         0 -> ProblemWriterWithDummy()
         1 -> ProblemWriterNoDummy()
-        else -> ProblemWriterWithDummy()
+        else -> null
     }
     private val objectMapper = jacksonObjectMapper().apply {
         when (ConfigProvider.config.solver) {
@@ -37,17 +37,55 @@ class Solver {
     private val tSPForCluster = TSPForCluster()
     private val visualizer = Visualizer()
     private val evaluater = Evaluater()
+    private val budgetCalculator = BudgetCalculator()
+    private val clusterCorrecter = ClusterCorrecter()
 
-    fun solve(folderName: String): Result {
+    fun solve(folderName: String, gen: String): Result {
 
         cleanupService.cleanUp()
 
         val startTime = System.nanoTime()
 
-        val problemSpace = problemParser.readProblemSpace(folderName)
-        val clusterMap = clustering.cluster(problemSpace.nodeMap, problemSpace.metaData.costLimit.toInt())
+        val problemSpace = problemParser.readProblemSpace(folderName, gen)
 
+        logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.clustering}")
+        val clusterMap = when (ConfigProvider.config.clustering) {
+            ClusteringMethod.KMEANSUPPERBOUND -> {
+                clustering.clusterKmeansUpperBound(problemSpace.nodeMap)
+            }
+            ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> {
+                clustering.clusterCapacitatedCustom(problemSpace.nodeMap)
+            }
+            ClusteringMethod.KMEANSCAPACITATED -> {
+                clustering.clusterCapacitated(problemSpace.nodeMap)
+            }
+            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> {
+                clustering.clusterKmeans(problemSpace.nodeMap)
+            }
+        }
+        logger.info("clustering done")
+
+        logger.info("solving cluster TSP with ${clusterMap.size} clusters in concorde")
         val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
+        logger.info("solving cluster TSP done")
+
+        if (ConfigProvider.config.clustering == ClusteringMethod.KMEANSANDCORRECTLATER) {
+            logger.info("correcting cluster sizes")
+            clusterCorrecter.correctClusterSizes(clusterPath, problemSpace.metaData.costLimit.toInt())
+        }
+
+        tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
+
+        when (ConfigProvider.config.budgetDistribution) {
+            BudgetDistributionMethod.ELZEIN -> {
+                budgetCalculator.calculateBudgetElzein(clusterPath, problemSpace.metaData.costLimit.toDouble())
+            }
+            BudgetDistributionMethod.NAIVE -> {
+                budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble())
+            }
+        }
+
+        logger.info("solving clusters with ${ConfigProvider.config.solver}")
         val clusters = clusterPath.map { cluster ->
             val costLimit = problemSpace.metaData.costLimit.toInt() / (clusterPath.size)
             when (ConfigProvider.config.solver) {
@@ -60,7 +98,7 @@ class Solver {
                         cluster,
                         problemSpace,
                         costLimit,
-                        "src/main/resources/a280-gen1-50-cluster-${cluster.id}.oplib"
+                        "src/main/resources/a280-$gen-50-cluster-${cluster.id}.oplib"
                     )
                 }
             }
@@ -97,7 +135,7 @@ class Solver {
 
     private fun solveWithEa4op(cluster: Cluster, problemSpace: ProblemSpace, costLimit: Int, path: String) {
         try {
-            problemWriter.writeCluster(
+            problemWriter!!.writeCluster(
                 problemSpace.metaData,
                 problemSpace.distanceMatrix,
                 cluster,

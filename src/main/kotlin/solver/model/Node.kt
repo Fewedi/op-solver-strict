@@ -6,7 +6,7 @@ data class Node(
     val id: Int,
     val x: Double,
     val y: Double,
-    var revenue: Int = 1,
+    val revenue: Int,
     var startNode: Boolean = false,
     var endNode: Boolean = false,
     val distanceMap: MutableMap<Int, Double> = mutableMapOf(),

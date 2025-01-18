@@ -18,7 +18,7 @@ class StartNodeProvider {
 
     fun findEndNode(currentCluster: Cluster): Node {
         return if (currentCluster.nextCluster == null) {
-            Node(-1, -1.0, -1.0)
+            Node(-1, -1.0, -1.0, 0)
         } else {
             currentCluster.nextCluster!!.startNodes.first()
         }

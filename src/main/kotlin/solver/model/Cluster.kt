@@ -14,6 +14,7 @@ data class Cluster(
     var prevCluster: Cluster? = null,
     val startNodes: MutableList<Node> = mutableListOf(),
     val endNodes: MutableList<Node> = mutableListOf(),
+    var budget: Double = -1.0,
 ) {
     lateinit var solutionList: List<Node>
 

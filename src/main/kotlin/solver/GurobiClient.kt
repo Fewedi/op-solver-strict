@@ -208,7 +208,7 @@ class GurobiClient {
         env.start()
         val model = GRBModel(env)
         model[GRB.IntParam.OutputFlag] = 0
-        //model[GRB.DoubleParam.MIPGap] = 0.05
+        model[GRB.DoubleParam.MIPGap] = 0.05
 
         val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, 0, nodes.size - 1)
         setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution)

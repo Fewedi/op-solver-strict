@@ -2,34 +2,47 @@ activeProfile: gurobiWithFixedEndPoints
 
 profiles:
     oneStartPoint: # not feasible for ea4op
+        testSet: one
         solver: ea4op
+        ea4op:
+            startEntries: 1
+            dummyStartNode: none
+            dummyStartNodeMethod: none
+            dummyStartNodeFactor: 0.0
         clustering: kmeans
-        startEntries: 1
-        dummyStartNode: none
-        dummyStartNodeMethod: none
-        dummyStartNodeFactor: 0.0
+        budgetDistribution: elzein
+        revenueDistribution: random
         clusterSize: 20
     noStartPoints:
+        testSet: one
         solver: ea4op
+        ea4op:
+            startEntries: 0
+            dummyStartNode: none
+            dummyStartNodeMethod: none
+            dummyStartNodeFactor: 0.0
         clustering: kmeans
-        startEntries: 0
-        dummyStartNode: none
-        dummyStartNodeMethod: none
-        dummyStartNodeFactor: 0.0
+        budgetDistribution: elzein
+        revenueDistribution: random
         clusterSize: 20
     dummyStartNodeCluster: # dummy start node = previous cluster
+        testSet: one
         solver: ea4op
+        ea4op:
+            startEntries: 0
+            dummyStartNode: cluster
+            dummyStartNodeMethod: mean
+            dummyStartNodeFactor: 2.0
         clustering: kmeans
-        startEntries: 0
-        dummyStartNode: cluster
-        dummyStartNodeMethod: mean
-        dummyStartNodeFactor: 2.0
+        budgetDistribution: elzein
+        revenueDistribution: random
         clusterSize: 20
     gurobiWithFixedEndPoints:
+        testSet: base
         solver: gurobi
-        clustering: kmeans
-        startEntries: 0
-        dummyStartNode: none
-        dummyStartNodeMethod: none
-        dummyStartNodeFactor: 0.0
+        gurobi:
+            clusterStartNode: mean
+        clustering: KMEANSANDCORRECTLATER
+        budgetDistribution: elzein
+        revenueDistribution: random
         clusterSize: 20

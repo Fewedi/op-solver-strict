@@ -63,10 +63,10 @@ class ProblemWriterWithDummy: ProblemWriter {
         }
         clusterDistanceMatrix[0][0] = 100000.0
 
-        if (ConfigProvider.config.dummyStartNode == DummyStartNode.CLUSTER){
+        if (ConfigProvider.config.ea4op!!.dummyStartNode == DummyStartNode.CLUSTER){
             nodeList.forEach(){ node ->
-                clusterDistanceMatrix[0][node.writtenPosition] = node.distanceToNextCluster * ConfigProvider.config.dummyStartNodeFactor
-                clusterDistanceMatrix[node.writtenPosition][0] = node.distanceToPrevCluster * ConfigProvider.config.dummyStartNodeFactor
+                clusterDistanceMatrix[0][node.writtenPosition] = node.distanceToNextCluster * ConfigProvider.config.ea4op!!.dummyStartNodeFactor
+                clusterDistanceMatrix[node.writtenPosition][0] = node.distanceToPrevCluster * ConfigProvider.config.ea4op!!.dummyStartNodeFactor
             }
         }
         return clusterDistanceMatrix

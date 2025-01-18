@@ -1,6 +1,8 @@
 package masterthesis
 
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
+import masterthesis.solver.config.ConfigProvider
+import masterthesis.solver.config.TestSet
 import masterthesis.solver.model.Result
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -11,8 +13,8 @@ class MetaHandler {
 
     fun runAll() {
 
-
-        val folderName = "OPLib/instances/gen1" // The folder in your resources
+        val gen = "gen3"
+        val folderName = "OPLib/instances/$gen" // The folder in your resources
 
         val classLoader = Thread.currentThread().contextClassLoader
 
@@ -22,24 +24,27 @@ class MetaHandler {
 
         val solver = Solver()
 
-        val baseLines = listOf(
-            "eil101-gen1-50",
-            "gil262-gen1-50",
-            "pr299-gen1-50",
-            "lin318-gen1-50",
-            "rd400-gen1-50",
-            "d493-gen1-50",
-            "u574-gen1-50",
-            "u724-gen1-50",
-            "pcb1173-gen1-50",
-            "fl1400-gen1-50",
-            "pr2392-gen1-50"
-        )
-
-        val results = fileNames.filter { baseLines.contains(it) }.map { fileName ->
+        val cases = when( ConfigProvider.config.testSet) {
+            TestSet.ONE -> listOf("eil101-$gen-50")
+            TestSet.BASE -> listOf(
+                "eil101-$gen-50",
+                "gil262-$gen-50",
+                "pr299-$gen-50",
+                "lin318-$gen-50",
+                "rd400-$gen-50",
+                "d493-$gen-50",
+                "u574-$gen-50",
+                "u724-$gen-50",
+                "pcb1173-$gen-50",
+                "fl1400-$gen-50",
+                "pr2392-$gen-50"
+            )
+            TestSet.ALL -> fileNames
+        }
+        val results = fileNames.filter { cases.contains(it) }.map { fileName ->
             logger.info("Solving $fileName")
             try {
-                solver.solve(fileName)
+                solver.solve(fileName, gen)
             } catch (e: Exception) {
                 logger.error("Failed to solve $fileName", e)
                 Result(fileName, 0, emptyList(), 0.0, false, 0, 0.0, 0.0)
@@ -74,6 +79,8 @@ class MetaHandler {
                     )
                 )
             }
+
+            logger.info("Results written to results.csv")
         }
 
     }

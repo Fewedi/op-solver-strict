@@ -1,5 +1,7 @@
 package solver
 
+import masterthesis.solver.config.ConfigProvider
+import masterthesis.solver.config.RevenueDistributionType
 import masterthesis.solver.legacy.GkobeagaSolution
 import masterthesis.solver.model.GurobiSolution
 import masterthesis.solver.model.Node
@@ -14,12 +16,17 @@ class ProblemParser {
 
     private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
 
-    fun readProblemSpace(folderName: String): ProblemSpace {
-        val path = "src/main/resources/op-solver/build/OPLib/instances/gen1/$folderName.oplib"
+    fun readProblemSpace(folderName: String, gen: String): ProblemSpace {
+        val path = "src/main/resources/op-solver/build/OPLib/instances/$gen/$folderName.oplib"
         val file = File(path).readLines()
         val problem = ProblemMetaData(path)
 
         val nodeMap = HashMap<Int, Node>()
+
+        val getRevenue = when (ConfigProvider.config.revenueDistribution) {
+            RevenueDistributionType.RANDOM -> ::getRevenueRandom
+            RevenueDistributionType.FLAT-> ::getRevenueFlat
+        }
 
         var mode = ReadingMode.META
 
@@ -49,10 +56,12 @@ class ProblemParser {
                         val entry = line.split(" ")
                         if (entry.size == 3) {
                             val id = entry[0].toInt() - 1
-                            val x = entry[1].toDouble()
-                            val y = entry[2].toDouble()
-                            val isStart = id == 0
-                            val node = Node(id, x, y, startNode = isStart)
+                            val node = Node(
+                                id = id,
+                                x = entry[1].toDouble(),
+                                y = entry[2].toDouble(),
+                                revenue = getRevenue(),
+                                startNode = id == 0)
                             nodeMap[id] = node
                         } else {
                             logger.error("Unknown entry: $line in file $path")
@@ -80,6 +89,13 @@ class ProblemParser {
         val distanceMatrix = createDistanceMatrix(nodeMap)
 
         return ProblemSpace(problem, nodeMap, distanceMatrix)
+    }
+
+    private fun getRevenueRandom(): Int {
+        return (1..1000).random()
+    }
+    private fun getRevenueFlat(): Int {
+        return 1
     }
 
     private fun createDistanceMatrix(nodeMap: Map<Int, Node>): Array<DoubleArray> {
