@@ -38,11 +38,11 @@ profiles:
         revenueDistribution: random
         clusterSize: 20
     gurobiWithFixedEndPoints:
-        testSet: base
+        testSet: one
         solver: gurobi
         gurobi:
             clusterStartNode: mean
-        clustering: KMEANSANDCORRECTLATER
-        budgetDistribution: elzein
+        clustering: KmeansUpperBoundIgnoreOutliers
+        budgetDistribution: elzeinwithmin
         revenueDistribution: random
         clusterSize: 20

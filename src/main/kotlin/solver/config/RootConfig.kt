@@ -29,6 +29,7 @@ data class GurobiConfig (
 
 enum class TestSet {
     ONE,
+    HARD,
     BASE,
     ALL
 }
@@ -60,6 +61,7 @@ enum class ClusteringMethod {
     KMEANS,
     KMEANSANDCORRECTLATER,
     KMEANSUPPERBOUND,
+    KMEANSUPPERBOUNDIGNOREOUTLIERS,
     KMEANSCAPACITATED,
     KMEANSCAPACITATEDCUSTOM
 }
@@ -71,5 +73,6 @@ enum class RevenueDistributionType {
 
 enum class BudgetDistributionMethod {
     ELZEIN,
+    ELZEINWITHMIN,
     NAIVE
 }

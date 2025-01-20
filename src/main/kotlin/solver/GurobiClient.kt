@@ -11,6 +11,7 @@ import masterthesis.solver.model.Node
 class GurobiClient {
 
     private val logger = org.slf4j.LoggerFactory.getLogger(GurobiClient::class.java)
+    private val env = GRBEnv()
 
     private fun getTaskToAdd(
         solution: List<Int>,
@@ -204,18 +205,22 @@ class GurobiClient {
             }
         }
 
-        val env = GRBEnv()
-        env.start()
+        require(costMatrix.size == nodes.size) { "Cost matrix size does not match node size" }
+        if (!isLastCluster) require(costMatrix[0][costMatrix.size - 1] < budget) { "Budget is too low for the given cost matrix with ${costMatrix[0][costMatrix.size - 1]} to $budget " }
+
+        env[GRB.IntParam.OutputFlag] = 0
         val model = GRBModel(env)
-        model[GRB.IntParam.OutputFlag] = 0
+        model[GRB.DoubleParam.TimeLimit] = 60.0
         model[GRB.DoubleParam.MIPGap] = 0.05
 
+        env.start()
         val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, 0, nodes.size - 1)
         setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution)
 
+        logger.info("Solving cluster of size ${nodes.size} with budget $budget")
         model.optimize()
         val gurobiSolution = model.jsonSolution.let {
-            logger.info("Gurobi solution: $it")
+            logger.debug("Gurobi solution: $it")
             objectMapper.readValue(it, GurobiSolution::class.java)
         }
         return gurobiSolution

@@ -5,11 +5,10 @@ import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
-import solver.ProblemParser
 
 class TSPForCluster {
 
-    private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
+    private val logger = LoggerFactory.getLogger(TSPForCluster::class.java)
     private val startNodeProvider = StartNodeProvider()
 
     fun provideClusterPathConcorde(clusters: Map<Int, List<Node>>): List<Cluster> {

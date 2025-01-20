@@ -17,7 +17,7 @@ import solver.ProblemParser
 
 class Solver {
 
-    private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
+    private val logger = LoggerFactory.getLogger(Solver::class.java)
     private val cleanupService = CleanupService()
     private val problemParser = ProblemParser()
     private val clustering = Clustering()
@@ -50,18 +50,11 @@ class Solver {
 
         logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.clustering}")
         val clusterMap = when (ConfigProvider.config.clustering) {
-            ClusteringMethod.KMEANSUPPERBOUND -> {
-                clustering.clusterKmeansUpperBound(problemSpace.nodeMap)
-            }
-            ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> {
-                clustering.clusterCapacitatedCustom(problemSpace.nodeMap)
-            }
-            ClusteringMethod.KMEANSCAPACITATED -> {
-                clustering.clusterCapacitated(problemSpace.nodeMap)
-            }
-            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> {
-                clustering.clusterKmeans(problemSpace.nodeMap)
-            }
+            ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSCAPACITATED -> { clustering.clusterCapacitated(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap) }
         }
         logger.info("clustering done")
 
@@ -71,7 +64,7 @@ class Solver {
 
         if (ConfigProvider.config.clustering == ClusteringMethod.KMEANSANDCORRECTLATER) {
             logger.info("correcting cluster sizes")
-            clusterCorrecter.correctClusterSizes(clusterPath, problemSpace.metaData.costLimit.toInt())
+            clusterCorrecter.correctClusterSizes(clusterPath, ConfigProvider.config.clusterSize)
         }
 
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
@@ -80,36 +73,44 @@ class Solver {
             BudgetDistributionMethod.ELZEIN -> {
                 budgetCalculator.calculateBudgetElzein(clusterPath, problemSpace.metaData.costLimit.toDouble())
             }
+            BudgetDistributionMethod.ELZEINWITHMIN -> {
+                budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble())
+            }
             BudgetDistributionMethod.NAIVE -> {
                 budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble())
             }
         }
 
+
         logger.info("solving clusters with ${ConfigProvider.config.solver}")
-        val clusters = clusterPath.map { cluster ->
-            val costLimit = problemSpace.metaData.costLimit.toInt() / (clusterPath.size)
-            when (ConfigProvider.config.solver) {
-                Solver.gurobi -> {
-                    solveWithGurobi(cluster, costLimit)
-                }
+        try {
+            val clusters = clusterPath.map { cluster ->
+                when (ConfigProvider.config.solver) {
+                    Solver.gurobi -> {
+                        solveWithGurobi(cluster, cluster.budget.toInt())
+                    }
 
-                Solver.ea4op -> {
-                    solveWithEa4op(
-                        cluster,
-                        problemSpace,
-                        costLimit,
-                        "src/main/resources/a280-$gen-50-cluster-${cluster.id}.oplib"
-                    )
+                    Solver.ea4op -> {
+                        solveWithEa4op(
+                            cluster,
+                            problemSpace,
+                            cluster.budget.toInt(),
+                            "src/main/resources/a280-$gen-50-cluster-${cluster.id}.oplib"
+                        )
+                    }
                 }
+                cluster
             }
-            cluster
+
+            val endTime = System.nanoTime()
+            val duration = (endTime - startTime) / 1_000_000_000.0
+            visualizer.plotGraph(problemSpace.nodeMap, clusterPath, folderName, true)
+            return evaluater.evaluateResult(problemSpace, clusters, duration, folderName)
+        }catch (e: Exception){
+            throw e
+        }finally {
+            visualizer.plotGraph(problemSpace.nodeMap, clusterPath, folderName, false)
         }
-
-        val endTime = System.nanoTime()
-        val duration = (endTime - startTime) / 1_000_000_000.0
-        visualizer.plotGraph(problemSpace.nodeMap, clusters, folderName)
-
-        return evaluater.evaluateResult(problemSpace, clusters, duration, folderName)
     }
 
     private fun solveWithGurobi(cluster: Cluster, costLimit: Int) {

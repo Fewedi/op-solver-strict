@@ -4,11 +4,12 @@ import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
 import masterthesis.solver.model.Result
 import org.slf4j.LoggerFactory
-import solver.ProblemParser
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 class Evaluater {
 
-    private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
+    private val logger = LoggerFactory.getLogger(Evaluater::class.java)
     fun evaluateResult(problemSpace: ProblemSpace, clusters: List<Cluster>, duration: Double, name: String) : Result{
 
         var isValid = true
@@ -41,10 +42,11 @@ class Evaluater {
             name,
             problemSpace.nodeMap.size,
             finalPath,
-            problemSpace.metaData.costLimit.toDouble(),
+            problemSpace.metaData.costLimit.toDouble().toInt(),
             isValid,
             totalRevenue,
-            totalCost,
-            duration)
+            BigDecimal(totalCost).setScale(2, RoundingMode.HALF_EVEN).toDouble(),
+            BigDecimal(duration).setScale(2, RoundingMode.HALF_EVEN).toDouble(),
+        )
     }
 }

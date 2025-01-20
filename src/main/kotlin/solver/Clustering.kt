@@ -1,6 +1,5 @@
 package masterthesis.solver
 
-import masterthesis.evaluation.Visualizer
 import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
@@ -10,7 +9,7 @@ import kotlin.math.sqrt
 
 class Clustering {
 
-    private val logger = LoggerFactory.getLogger(Visualizer::class.java)
+    private val logger = LoggerFactory.getLogger(Clustering::class.java)
 
     fun clusterCapacitated(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList()
@@ -114,6 +113,52 @@ class Clustering {
         return resultMap
     }
 
+    fun clusterKmeansUpperBoundIgnoreOutliers(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
+        val nodes = nodeMap.values.toList().sortedByDescending { it.revenue }
+        val max = ConfigProvider.config.clusterSize
+        val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
+        var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
+        val resultList = MutableList(k) { mutableListOf<Node>() }
+        val deadCluster = mutableListOf<Node>()
+
+        for (i in 0 until 100) {
+            resultList.map { it.clear() }
+            nodes.forEach { node ->
+                val closestCentroid = centroids.minBy { it.distanceTo(node) }
+                if (resultList[centroids.indexOf(closestCentroid)].size < max) {
+                    resultList[centroids.indexOf(closestCentroid)].add(node)
+                } else {
+                    deadCluster.add(node)
+                }
+            }
+
+            val newCentroids = resultList.map { cluster ->
+                val x = cluster.map { it.x }.average()
+                val y = cluster.map { it.y }.average()
+                TempNode(x, y)
+            }
+
+            if (newCentroids.all { it in centroids }) {
+                break
+            } else {
+                centroids = newCentroids
+            }
+            deadCluster.clear()
+        }
+        val startNode = nodes.first { it.startNode }
+        if (deadCluster.contains(startNode)) {
+            resultList.add(mutableListOf(startNode))
+        }
+
+        logger.info("Clustering did not consider ${deadCluster.size} of ${nodes.size} nodes")
+
+        return resultList.mapIndexed { index, finalNodes ->
+            finalNodes.forEach() { it.cluster = index }
+            index to finalNodes
+        }.toMap()
+    }
+
+
     fun clusterKmeansUpperBound(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList()
         val max = ConfigProvider.config.clusterSize
@@ -150,7 +195,7 @@ class Clustering {
     fun clusterKmeans(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values
         val meanClusterSize = ConfigProvider.config.clusterSize
-        val k = nodes.size / meanClusterSize
+        val k = ceil(nodes.size.toDouble() / meanClusterSize.toDouble()).toInt()
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         val clusters = mutableMapOf<Node, Int>()
 

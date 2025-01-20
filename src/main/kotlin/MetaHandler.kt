@@ -26,6 +26,7 @@ class MetaHandler {
 
         val cases = when( ConfigProvider.config.testSet) {
             TestSet.ONE -> listOf("eil101-$gen-50")
+            TestSet.HARD -> listOf("rd400-$gen-50")
             TestSet.BASE -> listOf(
                 "eil101-$gen-50",
                 "gil262-$gen-50",
@@ -47,7 +48,7 @@ class MetaHandler {
                 solver.solve(fileName, gen)
             } catch (e: Exception) {
                 logger.error("Failed to solve $fileName", e)
-                Result(fileName, 0, emptyList(), 0.0, false, 0, 0.0, 0.0)
+                Result(fileName, 0, emptyList(), 0, false, 0, 0.0, 0.0)
             }
         }
 

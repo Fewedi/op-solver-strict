@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
-    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String) {
+    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String, gotResult: Boolean) {
 
         val startPosX = clusters.map { it.startNodes.first().x }
         val startPosY = clusters.map { it.startNodes.first().y }
@@ -28,14 +28,14 @@ class Visualizer {
         val cluster = clusterMap.values.map { it.cluster }
         val revenue = clusterMap.values.map { it.revenue }
 
-        val paths = clusters.map { c ->
+        val paths = if (gotResult) {clusters.map { c ->
             logger.info("${c.id} ${c.solutionList.map { it.id } }")
             if (c.endNodes.first().id == -1) {
                 c.solutionList
             }else {
                 c.solutionList + listOf(c.endNodes.first())
             }.zipWithNext()
-        }.flatten()
+        }.flatten()} else { emptyList() }
 
         plot {
             // Plot the first dataset (clusterDataSet)

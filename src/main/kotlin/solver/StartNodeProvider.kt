@@ -8,7 +8,7 @@ class StartNodeProvider {
 
     fun findStartNode(currentCluster: Cluster): Node {
         return if (currentCluster.prevCluster == null) {
-            currentCluster.nodes.first()
+            currentCluster.nodes.find { it.startNode } ?: currentCluster.nodes.first()
         } else {
             currentCluster.nodes.minByOrNull { node ->
                 node.distanceTo(currentCluster.prevCluster!!)
