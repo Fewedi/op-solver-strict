@@ -11,6 +11,32 @@ class CleanupService {
         cleanupFilesWithExtension("./", "TSP_problem.sol")
     }
 
+    fun finalCleanUp() {
+        cleanUp()
+        cleanupFoldersInFolder("./lets-plot-images")
+    }
+
+    private fun cleanupFoldersInFolder(directoryPath: String) {
+        val directory = File(directoryPath)
+
+        if (directory.exists() && directory.isDirectory) {
+            val foldersToDelete = directory.listFiles { file ->
+                file.isDirectory
+            }
+
+            foldersToDelete?.forEach { folder ->
+                if (folder.deleteRecursively()) {
+                    logger.info("Deleted: ${folder.name}")
+                } else {
+                    logger.error("Failed to delete: ${folder.name}")
+                }
+            }
+        } else {
+            logger.error("Invalid directory: $directoryPath")
+        }
+    }
+
+
     private fun cleanupFilesWithExtension(directoryPath: String, fileExtension: String) {
 
         val directory = File(directoryPath)

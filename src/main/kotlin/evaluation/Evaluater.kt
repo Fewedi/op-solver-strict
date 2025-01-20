@@ -2,7 +2,6 @@ package masterthesis.evaluation
 
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
-import masterthesis.solver.model.Result
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -10,13 +9,15 @@ import java.math.RoundingMode
 class Evaluater {
 
     private val logger = LoggerFactory.getLogger(Evaluater::class.java)
-    fun evaluateResult(problemSpace: ProblemSpace, clusters: List<Cluster>, duration: Double, name: String) : Result{
+    fun evaluateResult(problemSpace: ProblemSpace, clusters: List<Cluster>, duration: Double, name: String,clusterPath: List<Cluster>, visualizer: Visualizer) : Result {
 
         var isValid = true
         val finalPath = clusters.map { it.solutionList }.flatten()
         val totalRevenue = finalPath.sumOf { it.revenue }
         val totalCost = finalPath.zipWithNext().sumOf { it.first.distanceTo(it.second) }
 
+
+        visualizer.plotGraph(problemSpace.nodeMap, clusters, name, totalRevenue)
         logger.info("------ FINAL RESULTS ------")
         logger.info("Final path: ${finalPath.map { it.id }}")
         logger.info("Total revenue: $totalRevenue")

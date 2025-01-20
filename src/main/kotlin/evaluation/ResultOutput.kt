@@ -1,9 +1,8 @@
-package masterthesis.solver.model
+package masterthesis.evaluation
 
-data class Result(
+data class ResultOutput(
     val name: String,
     val size: Int,
-    val finalPath: List<Node>,
     val budget: Int,
     val successful: Boolean,
     val revenue: Int,

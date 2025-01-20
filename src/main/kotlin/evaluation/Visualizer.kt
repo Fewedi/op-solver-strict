@@ -11,12 +11,13 @@ import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 import org.jetbrains.kotlinx.kandy.letsplot.layers.points
 import org.jetbrains.kotlinx.kandy.letsplot.settings.Symbol
 import org.slf4j.LoggerFactory
+import java.io.File
 
 
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
-    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String, gotResult: Boolean) {
+    fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String, totalRevenue: Int) {
 
         val startPosX = clusters.map { it.startNodes.first().x }
         val startPosY = clusters.map { it.startNodes.first().y }
@@ -28,7 +29,7 @@ class Visualizer {
         val cluster = clusterMap.values.map { it.cluster }
         val revenue = clusterMap.values.map { it.revenue }
 
-        val paths = if (gotResult) {clusters.map { c ->
+        val paths = if (totalRevenue > 0) {clusters.map { c ->
             logger.info("${c.id} ${c.solutionList.map { it.id } }")
             if (c.endNodes.first().id == -1) {
                 c.solutionList
@@ -37,6 +38,8 @@ class Visualizer {
             }.zipWithNext()
         }.flatten()} else { emptyList() }
 
+        File("lets-plot-images/$name").mkdirs()
+        val shortName = name.split("-").first().trim()
         plot {
             // Plot the first dataset (clusterDataSet)
             points {
@@ -59,7 +62,7 @@ class Visualizer {
                     scale = categorical()
                 }
                 alpha(revenue) {
-                    scale = continuous(range = (0.4..1.0))
+                    scale = continuous(range = (0.1..1.0))
                 }
             }
 
@@ -70,7 +73,7 @@ class Visualizer {
                     y(it.toList().map { it.y })
                 }
             }
-        }.save("$name.png")
+        }.save("$name/$shortName-$totalRevenue.png")
     }
 
 }

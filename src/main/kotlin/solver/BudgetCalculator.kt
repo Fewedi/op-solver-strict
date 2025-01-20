@@ -22,7 +22,7 @@ class BudgetCalculator {
 
     fun calculateBudgetElzeinWithMin(clusters: List<Cluster>, budget: Double) {
         val minDistances = clusters.map { cluster ->
-            if (cluster.endNodes.isEmpty()) {
+            if (cluster.endNodes.first().id == -1) {
                 0.0
             } else {
                 cluster.startNodes.first().distanceTo(cluster.endNodes.first())

@@ -2,6 +2,7 @@ activeProfile: gurobiWithFixedEndPoints
 
 profiles:
     oneStartPoint: # not feasible for ea4op
+        runs: 1
         testSet: one
         solver: ea4op
         ea4op:
@@ -14,6 +15,7 @@ profiles:
         revenueDistribution: random
         clusterSize: 20
     noStartPoints:
+        runs: 1
         testSet: one
         solver: ea4op
         ea4op:
@@ -26,6 +28,7 @@ profiles:
         revenueDistribution: random
         clusterSize: 20
     dummyStartNodeCluster: # dummy start node = previous cluster
+        runs: 1
         testSet: one
         solver: ea4op
         ea4op:
@@ -38,11 +41,12 @@ profiles:
         revenueDistribution: random
         clusterSize: 20
     gurobiWithFixedEndPoints:
-        testSet: one
+        runs: 3
+        testSet: base
         solver: gurobi
         gurobi:
             clusterStartNode: mean
         clustering: KmeansUpperBoundIgnoreOutliers
         budgetDistribution: elzeinwithmin
         revenueDistribution: random
-        clusterSize: 20
+        clusterSize: 24

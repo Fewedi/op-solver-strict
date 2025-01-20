@@ -92,7 +92,7 @@ class ProblemParser {
     }
 
     private fun getRevenueRandom(): Int {
-        return (1..1000).random()
+        return (1..100).random()
     }
     private fun getRevenueFlat(): Int {
         return 1

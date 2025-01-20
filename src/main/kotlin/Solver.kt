@@ -11,7 +11,7 @@ import masterthesis.solver.config.Solver
 import masterthesis.solver.legacy.*
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
-import masterthesis.solver.model.Result
+import masterthesis.evaluation.Result
 import org.slf4j.LoggerFactory
 import solver.ProblemParser
 
@@ -70,17 +70,10 @@ class Solver {
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
 
         when (ConfigProvider.config.budgetDistribution) {
-            BudgetDistributionMethod.ELZEIN -> {
-                budgetCalculator.calculateBudgetElzein(clusterPath, problemSpace.metaData.costLimit.toDouble())
-            }
-            BudgetDistributionMethod.ELZEINWITHMIN -> {
-                budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble())
-            }
-            BudgetDistributionMethod.NAIVE -> {
-                budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble())
-            }
+            BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
+            BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
+            BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
         }
-
 
         logger.info("solving clusters with ${ConfigProvider.config.solver}")
         try {
@@ -104,12 +97,10 @@ class Solver {
 
             val endTime = System.nanoTime()
             val duration = (endTime - startTime) / 1_000_000_000.0
-            visualizer.plotGraph(problemSpace.nodeMap, clusterPath, folderName, true)
-            return evaluater.evaluateResult(problemSpace, clusters, duration, folderName)
+            return evaluater.evaluateResult(problemSpace, clusters, duration, folderName,clusterPath, visualizer)
         }catch (e: Exception){
+            visualizer.plotGraph(problemSpace.nodeMap, clusterPath, folderName, 0)
             throw e
-        }finally {
-            visualizer.plotGraph(problemSpace.nodeMap, clusterPath, folderName, false)
         }
     }
 

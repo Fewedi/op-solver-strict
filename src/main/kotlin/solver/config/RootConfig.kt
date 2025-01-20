@@ -6,6 +6,7 @@ data class RootConfig (
 )
 
 data class ProfileConfig (
+    val runs: Int,
     val testSet: TestSet,
     val solver: Solver,
     val ea4op: Ea4opConfig?,
