@@ -193,7 +193,7 @@ class GurobiClient {
         // 6 done implicit in definition of x
     }
 
-    fun solve(objectMapper: ObjectMapper, nodes: List<Node>, budget: Int): GurobiSolution {
+    fun solve(objectMapper: ObjectMapper, nodes: List<Node>, budget: Double): GurobiSolution {
         val isLastCluster = nodes.last().id == -1
         val costMatrix = Array(nodes.size) { i ->
             DoubleArray(nodes.size) { j ->

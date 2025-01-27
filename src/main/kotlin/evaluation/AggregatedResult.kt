@@ -1,6 +1,6 @@
 package masterthesis.evaluation
 
-data class AggregatedResultOutput(
+data class AggregatedResult(
     val name: String,
     val size: Int,
     val budget: Int,

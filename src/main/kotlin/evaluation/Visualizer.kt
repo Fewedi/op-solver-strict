@@ -1,6 +1,7 @@
 package masterthesis.evaluation
 
 
+import masterthesis.solver.config.ConfigProvider
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import org.jetbrains.kotlinx.kandy.dsl.categorical
@@ -29,14 +30,18 @@ class Visualizer {
         val cluster = clusterMap.values.map { it.cluster }
         val revenue = clusterMap.values.map { it.revenue }
 
-        val paths = if (totalRevenue > 0) {clusters.map { c ->
-            logger.info("${c.id} ${c.solutionList.map { it.id } }")
-            if (c.endNodes.first().id == -1) {
-                c.solutionList
-            }else {
-                c.solutionList + listOf(c.endNodes.first())
-            }.zipWithNext()
-        }.flatten()} else { emptyList() }
+        val paths = if (totalRevenue > 0) {
+            clusters.map { c ->
+                logger.info("${c.id} ${c.solutionList.map { it.id }}")
+                if (c.endNodes.first().id == -1) {
+                    c.solutionList
+                } else {
+                    c.solutionList + listOf(c.endNodes.first())
+                }.zipWithNext()
+            }.flatten()
+        } else {
+            emptyList()
+        }
 
         File("lets-plot-images/$name").mkdirs()
         val shortName = name.split("-").first().trim()
@@ -73,7 +78,14 @@ class Visualizer {
                     y(it.toList().map { it.y })
                 }
             }
-        }.save("$name/$shortName-$totalRevenue.png")
+        }.let {
+            if (ConfigProvider.config.applyParameterTuning) {
+                val param = ConfigProvider.config.budgetWeight
+                it.save("$name/$shortName-$totalRevenue-$param.png")
+            } else {
+                it.save("$name/$shortName-$totalRevenue.png")
+            }
+        }
     }
 
 }

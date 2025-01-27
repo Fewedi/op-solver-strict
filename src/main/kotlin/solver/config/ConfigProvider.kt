@@ -7,4 +7,8 @@ object ConfigProvider {
     fun loadConfig() {
         config = ConfigLoader().loadConfig()
     }
+
+    fun setConfig(config: ProfileConfig) {
+        this.config = config
+    }
 }

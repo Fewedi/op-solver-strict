@@ -2,6 +2,8 @@ activeProfile: gurobiWithFixedEndPoints
 
 profiles:
     oneStartPoint: # not feasible for ea4op
+        bothRevenueDistribution: true
+        applyParameterTuning: False
         runs: 1
         testSet: one
         solver: ea4op
@@ -12,9 +14,12 @@ profiles:
             dummyStartNodeFactor: 0.0
         clustering: kmeans
         budgetDistribution: elzein
+        budgetWeight: 0.2
         revenueDistribution: random
         clusterSize: 20
     noStartPoints:
+        bothRevenueDistribution: true
+        applyParameterTuning: False
         runs: 1
         testSet: one
         solver: ea4op
@@ -25,9 +30,12 @@ profiles:
             dummyStartNodeFactor: 0.0
         clustering: kmeans
         budgetDistribution: elzein
+        budgetWeight: 0.2
         revenueDistribution: random
         clusterSize: 20
     dummyStartNodeCluster: # dummy start node = previous cluster
+        bothRevenueDistribution: true
+        applyParameterTuning: False
         runs: 1
         testSet: one
         solver: ea4op
@@ -39,14 +47,23 @@ profiles:
         clustering: kmeans
         budgetDistribution: elzein
         revenueDistribution: random
+        budgetWeight: 0.2
         clusterSize: 20
     gurobiWithFixedEndPoints:
-        runs: 3
-        testSet: base
+        bothRevenueDistribution: true
+        applyParameterTuning: true
+        parameterTuning:
+            parameter: CONSIDEROUTLIERS
+            startValue: 0.0
+            endValue: 1.0
+            stepSize: 0.1
+        runs: 10
+        testSet: train
         solver: gurobi
         gurobi:
             clusterStartNode: mean
         clustering: KmeansUpperBoundIgnoreOutliers
-        budgetDistribution: elzeinwithmin
+        budgetDistribution: CONSIDEROUTLIERS
+        budgetWeight: 0.2
         revenueDistribution: random
         clusterSize: 24

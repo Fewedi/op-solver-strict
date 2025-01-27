@@ -70,8 +70,15 @@ class Solver {
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
 
         when (ConfigProvider.config.budgetDistribution) {
-            BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
+            BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(
+                clusterPath,
+                problemSpace.metaData.costLimit.toDouble()
+            ) }
             BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
+            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderOutliers(clusterPath, problemSpace.metaData.costLimit.toDouble(),
+                ConfigProvider.config.budgetWeight) }
+            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, problemSpace.metaData.costLimit.toDouble(),
+                ConfigProvider.config.budgetWeight) }
             BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
         }
 
@@ -80,14 +87,14 @@ class Solver {
             val clusters = clusterPath.map { cluster ->
                 when (ConfigProvider.config.solver) {
                     Solver.gurobi -> {
-                        solveWithGurobi(cluster, cluster.budget.toInt())
+                        solveWithGurobi(cluster, cluster.budget)
                     }
 
                     Solver.ea4op -> {
                         solveWithEa4op(
                             cluster,
                             problemSpace,
-                            cluster.budget.toInt(),
+                            cluster.budget,
                             "src/main/resources/a280-$gen-50-cluster-${cluster.id}.oplib"
                         )
                     }
@@ -104,7 +111,7 @@ class Solver {
         }
     }
 
-    private fun solveWithGurobi(cluster: Cluster, costLimit: Int) {
+    private fun solveWithGurobi(cluster: Cluster, costLimit: Double) {
         try {
             val startNodeIndex = cluster.nodes.indexOf(cluster.startNodes.first())
             val preparedList =
@@ -125,7 +132,7 @@ class Solver {
         }
     }
 
-    private fun solveWithEa4op(cluster: Cluster, problemSpace: ProblemSpace, costLimit: Int, path: String) {
+    private fun solveWithEa4op(cluster: Cluster, problemSpace: ProblemSpace, costLimit: Double, path: String) {
         try {
             problemWriter!!.writeCluster(
                 problemSpace.metaData,

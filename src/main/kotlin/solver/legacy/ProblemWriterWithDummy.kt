@@ -17,7 +17,7 @@ class ProblemWriterWithDummy: ProblemWriter {
         distanceMatrix: Array<DoubleArray>,
         cluster: Cluster,
         path: String,
-        costLimit: Int
+        costLimit: Double
     ) {
         val nodeList: MutableList<Node> = mutableListOf()
         val clusterDistanceMatrix = createDistanceMatrix(cluster, distanceMatrix, nodeList)

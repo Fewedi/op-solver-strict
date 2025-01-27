@@ -6,6 +6,9 @@ data class RootConfig (
 )
 
 data class ProfileConfig (
+    val bothRevenueDistribution: Boolean,
+    val applyParameterTuning: Boolean,
+    val parameterTuning: ParameterTuning?,
     val runs: Int,
     val testSet: TestSet,
     val solver: Solver,
@@ -13,8 +16,16 @@ data class ProfileConfig (
     val gurobi: GurobiConfig?,
     val clustering: ClusteringMethod,
     val budgetDistribution: BudgetDistributionMethod,
+    val budgetWeight: Double,
     val revenueDistribution: RevenueDistributionType,
     val clusterSize: Int
+)
+
+data class ParameterTuning (
+    val parameter: String,
+    val startValue: Double,
+    val endValue: Double,
+    val stepSize: Double
 )
 
 data class Ea4opConfig (
@@ -32,7 +43,8 @@ enum class TestSet {
     ONE,
     HARD,
     BASE,
-    ALL
+    ALL,
+    TRAIN
 }
 
 enum class Solver {
@@ -75,5 +87,7 @@ enum class RevenueDistributionType {
 enum class BudgetDistributionMethod {
     ELZEIN,
     ELZEINWITHMIN,
+    CONSIDEROUTLIERS,
+    CONSIDERCLUSTERMEAN,
     NAIVE
 }

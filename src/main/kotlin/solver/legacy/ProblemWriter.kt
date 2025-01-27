@@ -10,6 +10,6 @@ fun interface ProblemWriter {
         distanceMatrix: Array<DoubleArray>,
         cluster: Cluster,
         path: String,
-        costLimit: Int
+        costLimit: Double
     )
 }
