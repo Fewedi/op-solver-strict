@@ -1,4 +1,4 @@
-package masterthesis.solver.config
+package masterthesis.config
 
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper

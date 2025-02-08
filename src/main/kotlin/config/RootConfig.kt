@@ -1,4 +1,4 @@
-package masterthesis.solver.config
+package masterthesis.config
 
 data class RootConfig (
     val activeProfile: Profile, // To store the active profile name
@@ -6,8 +6,8 @@ data class RootConfig (
 )
 
 data class ProfileConfig (
+    val mode: Mode,
     val bothRevenueDistribution: Boolean,
-    val applyParameterTuning: Boolean,
     val parameterTuning: ParameterTuning?,
     val runs: Int,
     val testSet: TestSet,
@@ -20,6 +20,12 @@ data class ProfileConfig (
     val revenueDistribution: RevenueDistributionType,
     val clusterSize: Int
 )
+
+enum class Mode {
+    RUN,
+    PARAMETERSEARCH,
+    CLUSTERINVESTIGATION
+}
 
 data class ParameterTuning (
     val parameter: String,
@@ -53,9 +59,7 @@ enum class Solver {
 }
 
 enum class Profile {
-    oneStartPoint,
-    noStartPoints,
-    dummyStartNodeCluster,
+    clusterInvestigation,
     gurobiWithFixedEndPoints
 }
 
@@ -76,7 +80,8 @@ enum class ClusteringMethod {
     KMEANSUPPERBOUND,
     KMEANSUPPERBOUNDIGNOREOUTLIERS,
     KMEANSCAPACITATED,
-    KMEANSCAPACITATEDCUSTOM
+    KMEANSCAPACITATEDCUSTOM,
+    KMEANSSPLIT
 }
 
 enum class RevenueDistributionType {

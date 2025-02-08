@@ -1,7 +1,7 @@
 package solver
 
-import masterthesis.solver.config.ConfigProvider
-import masterthesis.solver.config.RevenueDistributionType
+import masterthesis.config.ConfigProvider
+import masterthesis.config.RevenueDistributionType
 import masterthesis.solver.legacy.GkobeagaSolution
 import masterthesis.solver.model.GurobiSolution
 import masterthesis.solver.model.Node

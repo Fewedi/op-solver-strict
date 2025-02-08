@@ -1,7 +1,7 @@
 package masterthesis.solver.legacy
 
-import masterthesis.solver.config.ConfigProvider
-import masterthesis.solver.config.DummyStartNode
+import masterthesis.config.ConfigProvider
+import masterthesis.config.DummyStartNode
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import masterthesis.solver.model.ProblemMetaData

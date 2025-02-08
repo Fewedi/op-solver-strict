@@ -27,4 +27,16 @@ data class Node(
         val yDiff = y - cluster.y
         return sqrt(xDiff * xDiff + yDiff * yDiff)
     }
+
+    fun distanceTo(other: Node, max: Double): Double {
+        val xDiff = x - other.x
+        val yDiff = y - other.y
+        return (sqrt(xDiff * xDiff + yDiff * yDiff)) / max
+    }
+
+    fun distanceTo(cluster: Cluster, max: Double): Double {
+        val xDiff = x - cluster.x
+        val yDiff = y - cluster.y
+        return (sqrt(xDiff * xDiff + yDiff * yDiff)) / max
+    }
 }

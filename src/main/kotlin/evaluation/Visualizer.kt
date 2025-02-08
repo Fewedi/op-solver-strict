@@ -1,22 +1,141 @@
 package masterthesis.evaluation
 
 
-import masterthesis.solver.config.ConfigProvider
+import masterthesis.config.ConfigProvider
+import masterthesis.config.Mode
+import masterthesis.investigation.ClusterMetric
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
+import org.jetbrains.kotlinx.dataframe.math.median
 import org.jetbrains.kotlinx.kandy.dsl.categorical
 import org.jetbrains.kotlinx.kandy.dsl.continuous
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
+import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 import org.jetbrains.kotlinx.kandy.letsplot.layers.points
+import org.jetbrains.kotlinx.kandy.letsplot.multiplot.plotBunch
 import org.jetbrains.kotlinx.kandy.letsplot.settings.Symbol
 import org.slf4j.LoggerFactory
 import java.io.File
-
+import java.math.BigDecimal
+import kotlin.math.min
+import kotlin.reflect.full.memberProperties
 
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
+
+    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetric: String, yMetric: String ) {
+
+        val xProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == xMetric }
+        val yProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == yMetric }
+
+        val xs = when (xProp?.get(clusters.first())) {
+            is BigDecimal -> { clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() } }
+            is Int -> { clusters.map { xProp?.get(it) as Int }.map { it.toDouble() } }
+            else -> { clusters.map { xProp?.get(it) as Number }.map { it.toDouble() } }
+        }
+        val ys = when (yProp?.get(clusters.first())) {
+            is BigDecimal -> { clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() } }
+            is Int -> { clusters.map { yProp?.get(it) as Int }.map { it.toDouble() } }
+            else -> { clusters.map { yProp?.get(it) as Number }.map { it.toDouble() } }
+        }
+        val xmax = xs.median() * 2
+        val ymax = ys.median() * 2
+        val instances = clusters.map { it._name }
+
+        plot {
+            points {
+                x(xs){
+                    scale = continuous(0.0 .. xmax)
+                }
+                y(ys){
+                    scale = continuous(0.0 .. ymax)
+                }
+                color(instances) {
+                    scale = categorical()
+                }
+            }
+            layout {
+                style {
+                    xAxisLabel = xMetric
+                    yAxisLabel = yMetric
+                }
+            }
+        }.save("cluster-metrics-$xMetric-$yMetric.png")
+    }
+
+    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetrics: List<String>, yMetric: String ) {
+
+
+
+        plotBunch {
+
+            xMetrics.forEachIndexed { index, xMetric ->
+                val xProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == xMetric }
+                val yProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == yMetric }
+
+                val xs = when (xProp?.get(clusters.first())) {
+                    is BigDecimal -> {
+                        clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                    }
+
+                    is Int -> {
+                        clusters.map { xProp?.get(it) as Int }.map { it.toDouble() }
+                    }
+
+                    else -> {
+                        clusters.map { xProp?.get(it) as Number }.map { it.toDouble() }
+                    }
+                }
+                val ys = when (yProp?.get(clusters.first())) {
+                    is BigDecimal -> {
+                        clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                    }
+
+                    is Int -> {
+                        clusters.map { yProp?.get(it) as Int }.map { it.toDouble() }
+                    }
+
+                    else -> {
+                        clusters.map { yProp?.get(it) as Number }.map { it.toDouble() }
+                    }
+                }
+                val xmax = min(xs.median() * 4, xs.max())
+                val ymax = ys.median() * 2
+                val instances = clusters.map { it._name }
+
+                add(
+                    plot {
+                        points {
+                            x(xs) {
+                                scale = continuous(0.0..xmax)
+                            }
+                            y(ys) {
+                                scale = continuous(0.0..ymax)
+                            }
+                            color(instances) {
+                                scale = categorical()
+                            }
+                        }
+                        layout {
+                            style {
+                                xAxisLabel = xMetric
+                                yAxisLabel = yMetric
+                            }
+                        }
+                    },
+                    x = index.mod(4) * 450,
+                    y = index.div(4) * 400,
+                )
+            }
+
+        }.save("cluster-metrics-$yMetric.png")
+
+    }
+
+
+
 
     fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String, totalRevenue: Int) {
 
@@ -79,11 +198,16 @@ class Visualizer {
                 }
             }
         }.let {
-            if (ConfigProvider.config.applyParameterTuning) {
-                val param = ConfigProvider.config.budgetWeight
-                it.save("$name/$shortName-$totalRevenue-$param.png")
-            } else {
-                it.save("$name/$shortName-$totalRevenue.png")
+
+            when (ConfigProvider.config.mode) {
+                Mode.RUN -> {
+                    it.save("$name/$shortName-$totalRevenue.png")
+                }
+
+                Mode.PARAMETERSEARCH, Mode.CLUSTERINVESTIGATION -> {
+                    val param = ConfigProvider.config.budgetWeight
+                    it.save("$name/$shortName-$totalRevenue-$param.png")
+                }
             }
         }
     }

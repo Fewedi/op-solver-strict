@@ -1,6 +1,6 @@
 package masterthesis.solver
 
-import masterthesis.solver.config.ConfigProvider
+import masterthesis.config.ConfigProvider
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
 import kotlin.math.ceil
@@ -196,24 +196,47 @@ class Clustering {
         val nodes = nodeMap.values
         val meanClusterSize = ConfigProvider.config.clusterSize
         val k = ceil(nodes.size.toDouble() / meanClusterSize.toDouble()).toInt()
+        return kmeans(nodes.toList(), k)
+    }
+
+    private fun kmeans(nodes: List<Node>, k: Int): Map<Int, List<Node>> {
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         val clusters = mutableMapOf<Node, Int>()
-
         for (i in 0 until 100) {
             nodes.forEach { node ->
                 val closestCentroid = centroids.minByOrNull { it.distanceTo(node) }
                 clusters[node] = centroids.indexOf(closestCentroid)
             }
 
-            centroids = updateCentroids(clusters, k)
-        }
-        nodes.forEach { node ->
-            node.cluster = clusters.getOrElse(node) {
-                logger.error("Node $node not found in clusters")
-                -1
+            val newCentroids = updateCentroids(clusters, k)
+            if (newCentroids.all { it in centroids }) {
+                break
+            } else {
+                centroids = newCentroids
             }
         }
         return clusters.entries.groupBy({ it.value }, { it.key })
+    }
+
+    fun clusterKmeansWithSplitting(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
+        val nodes = nodeMap.values
+        val meanClusterSize = ConfigProvider.config.clusterSize
+        val k = ceil(nodes.size.toDouble() / meanClusterSize.toDouble()).toInt()
+        var clusters = kmeans(nodes.toList(), k).values.toList()
+        while (clusters.any {it.size > meanClusterSize}) {
+            clusters = clusters.map {
+                if (it.size <= meanClusterSize) {
+                    listOf(it)
+                } else {
+                    val newK = ceil(it.size.toDouble() / meanClusterSize.toDouble()).toInt()
+                    kmeans(it, newK).values
+                }
+            }.flatten().toList()
+        }
+        return clusters.mapIndexed { index, finalNodes ->
+            finalNodes.forEach() { it.cluster = index }
+            index to finalNodes
+        }.toMap()
     }
 
     private fun updateCentroids(clusters: Map<Node, Int>, k: Int): List<TempNode> {

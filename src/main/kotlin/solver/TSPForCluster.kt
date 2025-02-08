@@ -1,7 +1,7 @@
 package masterthesis.solver
 
-import masterthesis.solver.config.AgregationMethod
-import masterthesis.solver.config.ConfigProvider
+import masterthesis.config.AgregationMethod
+import masterthesis.config.ConfigProvider
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory

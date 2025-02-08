@@ -1,4 +1,4 @@
-package masterthesis.solver.config
+package masterthesis.config
 
 object ConfigProvider {
     lateinit var config: ProfileConfig
@@ -9,6 +9,6 @@ object ConfigProvider {
     }
 
     fun setConfig(config: ProfileConfig) {
-        this.config = config
+        ConfigProvider.config = config
     }
 }

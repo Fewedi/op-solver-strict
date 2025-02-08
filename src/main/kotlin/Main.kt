@@ -1,6 +1,6 @@
 package masterthesis
 
-import masterthesis.solver.config.ConfigProvider
+import masterthesis.config.ConfigProvider
 import org.slf4j.LoggerFactory
 import kotlin.system.measureTimeMillis
 

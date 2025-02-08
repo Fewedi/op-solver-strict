@@ -4,10 +4,10 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import masterthesis.evaluation.Evaluater
 import masterthesis.evaluation.Visualizer
 import masterthesis.solver.*
-import masterthesis.solver.config.BudgetDistributionMethod
-import masterthesis.solver.config.ClusteringMethod
-import masterthesis.solver.config.ConfigProvider
-import masterthesis.solver.config.Solver
+import masterthesis.config.BudgetDistributionMethod
+import masterthesis.config.ClusteringMethod
+import masterthesis.config.ConfigProvider
+import masterthesis.config.Solver
 import masterthesis.solver.legacy.*
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
@@ -55,16 +55,18 @@ class Solver {
             ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSCAPACITATED -> { clustering.clusterCapacitated(problemSpace.nodeMap) }
             ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap) }
         }
         logger.info("clustering done")
 
         logger.info("solving cluster TSP with ${clusterMap.size} clusters in concorde")
-        val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
+        val originalClusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
         logger.info("solving cluster TSP done")
 
-        if (ConfigProvider.config.clustering == ClusteringMethod.KMEANSANDCORRECTLATER) {
-            logger.info("correcting cluster sizes")
-            clusterCorrecter.correctClusterSizes(clusterPath, ConfigProvider.config.clusterSize)
+        val clusterPath = when (ConfigProvider.config.clustering) {
+            ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, ConfigProvider.config.clusterSize) }
+            ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, ConfigProvider.config.clusterSize) }
+            else -> { originalClusterPath }
         }
 
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
@@ -75,7 +77,7 @@ class Solver {
                 problemSpace.metaData.costLimit.toDouble()
             ) }
             BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
-            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderOutliers(clusterPath, problemSpace.metaData.costLimit.toDouble(),
+            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderDetours(clusterPath, problemSpace.metaData.costLimit.toDouble(),
                 ConfigProvider.config.budgetWeight) }
             BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, problemSpace.metaData.costLimit.toDouble(),
                 ConfigProvider.config.budgetWeight) }
@@ -111,7 +113,7 @@ class Solver {
         }
     }
 
-    private fun solveWithGurobi(cluster: Cluster, costLimit: Double) {
+    fun solveWithGurobi(cluster: Cluster, costLimit: Double) {
         try {
             val startNodeIndex = cluster.nodes.indexOf(cluster.startNodes.first())
             val preparedList =

@@ -1,9 +1,8 @@
 package masterthesis
 
+import masterthesis.config.*
 import masterthesis.evaluation.*
-import masterthesis.solver.config.ConfigProvider
-import masterthesis.solver.config.RevenueDistributionType
-import masterthesis.solver.config.TestSet
+import masterthesis.investigation.BudgetComparison
 import masterthesis.solver.legacy.CleanupService
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -17,6 +16,7 @@ class MetaHandler {
     private val cleanupService = CleanupService()
     private val csvClient = CsvClient()
     private val solver = Solver()
+    private val budgetComparison = BudgetComparison()
 
     fun runAll() {
         cleanupService.finalCleanUp()
@@ -35,20 +35,38 @@ class MetaHandler {
     }
 
     private fun manageRun(fileNames: List<String>, gen: String) {
-        val flatness = ConfigProvider.config.revenueDistribution.name.lowercase()
-        if (ConfigProvider.config.applyParameterTuning) {
-            val valueList: MutableList<Double> = mutableListOf()
-            var value = ConfigProvider.config.parameterTuning!!.startValue
-            while (value <= ConfigProvider.config.parameterTuning!!.endValue) {
-                valueList.add(value)
-                value += ConfigProvider.config.parameterTuning!!.stepSize
+
+        when (ConfigProvider.config.mode) {
+            Mode.RUN -> {
+                val results = runTestCases(fileNames, solver, gen)
+                csvClient.writeCsv(results, getResultName("results"))
             }
-            val results = runParameterSearch(valueList, fileNames, solver, gen)
-            csvClient.writeCsvParamBased(results, "parameters_$flatness.csv", valueList)
-        } else {
-            val results = runTestCases(fileNames, solver, gen)
-            csvClient.writeCsv(results, "results_$flatness.csv")
+            Mode.PARAMETERSEARCH -> {
+                val valueList: MutableList<Double> = mutableListOf()
+                var value = ConfigProvider.config.parameterTuning!!.startValue
+                while (value <= ConfigProvider.config.parameterTuning!!.endValue) {
+                    valueList.add(value)
+                    value += ConfigProvider.config.parameterTuning!!.stepSize
+                }
+                val results = runParameterSearch(valueList, fileNames, solver, gen)
+                csvClient.writeCsvParamBased(results, getResultName("parameters"), valueList)
+            }
+            Mode.CLUSTERINVESTIGATION -> {
+                budgetComparison.prepareMultipleRuns(fileNames, gen)
+            }
         }
+    }
+
+    private fun getResultName(prefix: String): String {
+        val budgetDistribution = when(ConfigProvider.config.budgetDistribution) {
+            BudgetDistributionMethod.CONSIDEROUTLIERS -> "co"
+            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> "cm"
+            BudgetDistributionMethod.ELZEIN -> "e"
+            BudgetDistributionMethod.ELZEINWITHMIN -> "em"
+            BudgetDistributionMethod.NAIVE -> "n"
+        }
+        val flatness = ConfigProvider.config.revenueDistribution.name.lowercase()
+        return "${prefix}_${flatness}_$budgetDistribution.csv"
     }
 
     private fun runParameterSearch(
@@ -156,11 +174,11 @@ class MetaHandler {
             budget = successfulResults.let { it.ifEmpty { results } }.first().budget,
             successfulAmount = successfulResults.size,
             revenueMin = successfulResults.minOf { it.revenue },
-            revenueAvg = successfulResults.sumOf { it.revenue } / results.filter { it.successful }.size,
+            revenueAvg = successfulResults.sumOf { it.revenue } / maxOf(results.filter { it.successful }.size, 1),
             revenueMax = successfulResults.maxOf { it.revenue },
-            budgetSpentAvg = successfulResults.sumOf { it.budgetSpent } / results.filter { it.successful }.size,
+            budgetSpentAvg = successfulResults.sumOf { it.budgetSpent } / maxOf(results.filter { it.successful }.size, 1),
             timeMin = successfulResults.minOf { it.time },
-            timeAvg = (successfulResults.sumOf { it.time } / results.filter { it.successful }.size).let {
+            timeAvg = (successfulResults.sumOf { it.time } / maxOf(results.filter { it.successful }.size, 1)).let {
                 BigDecimal(it).setScale(
                     2,
                     RoundingMode.HALF_UP
