@@ -7,6 +7,7 @@ import masterthesis.solver.TSPForCluster
 import masterthesis.config.ClusteringMethod
 import masterthesis.config.ConfigProvider
 import masterthesis.evaluation.Visualizer
+import masterthesis.solver.StartNodeProvider
 import masterthesis.solver.model.Cluster
 import solver.ProblemParser
 import java.math.BigDecimal
@@ -20,6 +21,7 @@ class BudgetComparison {
     private val solver = Solver()
     private val csvClient = CsvClient()
     private val visualizer = Visualizer()
+    private val startNodeProvider = StartNodeProvider()
 
     fun prepareMultipleRuns(folderName: List<String>, gen: String) {
         val results = folderName.mapNotNull {
@@ -51,7 +53,7 @@ class BudgetComparison {
         }
 
         val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
-        tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
+        tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath, startNodeProvider)
 
         val bigBudgets = clusterPath.map { it.startNodes.first().distanceTo(it.endNodes.first()) * 3 }
         val smallBudgets = clusterPath.map { it.startNodes.first().distanceTo(it.endNodes.first()) * 1.5 }

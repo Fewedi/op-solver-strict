@@ -21,24 +21,41 @@ import java.io.File
 import java.math.BigDecimal
 import kotlin.math.min
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
-    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetric: String, yMetric: String ) {
+    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetric: String, yMetric: String) {
 
         val xProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == xMetric }
         val yProp = ClusterMetric::class.memberProperties.firstOrNull { it.name == yMetric }
 
         val xs = when (xProp?.get(clusters.first())) {
-            is BigDecimal -> { clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() } }
-            is Int -> { clusters.map { xProp?.get(it) as Int }.map { it.toDouble() } }
-            else -> { clusters.map { xProp?.get(it) as Number }.map { it.toDouble() } }
+            is BigDecimal -> {
+                clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() }
+            }
+
+            is Int -> {
+                clusters.map { xProp?.get(it) as Int }.map { it.toDouble() }
+            }
+
+            else -> {
+                clusters.map { xProp?.get(it) as Number }.map { it.toDouble() }
+            }
         }
         val ys = when (yProp?.get(clusters.first())) {
-            is BigDecimal -> { clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() } }
-            is Int -> { clusters.map { yProp?.get(it) as Int }.map { it.toDouble() } }
-            else -> { clusters.map { yProp?.get(it) as Number }.map { it.toDouble() } }
+            is BigDecimal -> {
+                clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() }
+            }
+
+            is Int -> {
+                clusters.map { yProp?.get(it) as Int }.map { it.toDouble() }
+            }
+
+            else -> {
+                clusters.map { yProp?.get(it) as Number }.map { it.toDouble() }
+            }
         }
         val xmax = xs.median() * 2
         val ymax = ys.median() * 2
@@ -46,11 +63,11 @@ class Visualizer {
 
         plot {
             points {
-                x(xs){
-                    scale = continuous(0.0 .. xmax)
+                x(xs) {
+                    scale = continuous(0.0..xmax)
                 }
-                y(ys){
-                    scale = continuous(0.0 .. ymax)
+                y(ys) {
+                    scale = continuous(0.0..ymax)
                 }
                 color(instances) {
                     scale = categorical()
@@ -65,8 +82,7 @@ class Visualizer {
         }.save("cluster-metrics-$xMetric-$yMetric.png")
     }
 
-    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetrics: List<String>, yMetric: String ) {
-
+    fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetrics: List<String>, yMetric: String) {
 
 
         plotBunch {
@@ -135,8 +151,6 @@ class Visualizer {
     }
 
 
-
-
     fun plotGraph(clusterMap: Map<Int, Node>, clusters: List<Cluster>, name: String, totalRevenue: Int) {
 
         val startPosX = clusters.map { it.startNodes.first().x }
@@ -197,19 +211,32 @@ class Visualizer {
                     y(it.toList().map { it.y })
                 }
             }
-        }.let {
+        }.save(getName(name, shortName, totalRevenue))
+    }
 
-            when (ConfigProvider.config.mode) {
-                Mode.RUN -> {
-                    it.save("$name/$shortName-$totalRevenue.png")
-                }
+    private fun getName(name: String, shortName: String, totalRevenue: Int): String {
 
-                Mode.PARAMETERSEARCH, Mode.CLUSTERINVESTIGATION -> {
-                    val param = ConfigProvider.config.budgetWeight
-                    it.save("$name/$shortName-$totalRevenue-$param.png")
+        val config = ConfigProvider.config
+
+
+        return when (config.mode) {
+            Mode.RUN -> {
+                "$name/$shortName-$totalRevenue.png"
+            }
+
+            Mode.PARAMETERSEARCH -> {
+                when (config.parameterTuning!!.parameter) {
+                    "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.budgetFactor}.png"
+                    "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.clusterEliminationThreshold}.png"
+                    "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.budgetWeight}.png"
+                    else -> "$name/$shortName-$totalRevenue.png"
                 }
+            }
+
+            Mode.CLUSTERINVESTIGATION -> {
+                val param = config.budgetWeight
+                "$name/$shortName-$totalRevenue-$param.png"
             }
         }
     }
-
 }

@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.isAccessible
 
 class MetaHandler {
 
@@ -66,7 +69,8 @@ class MetaHandler {
             BudgetDistributionMethod.NAIVE -> "n"
         }
         val flatness = ConfigProvider.config.revenueDistribution.name.lowercase()
-        return "${prefix}_${flatness}_$budgetDistribution.csv"
+        val paramName = ConfigProvider.config.parameterTuning?.parameter?.lowercase() ?: "none"
+        return "${prefix}_${flatness}_${budgetDistribution}_${paramName}.csv"
     }
 
     private fun runParameterSearch(
@@ -83,7 +87,6 @@ class MetaHandler {
                 when (result) {
                     is ResultOutput ->
                         resultsCase.find { result.name == it.name }?.values?.add(result.revenue)
-
                     is AggregatedResult -> resultsCase.find { result.name == it.name }?.values?.add(result.revenueAvg)
                     else -> {
                         logger.error("Unknown result type")
@@ -116,22 +119,22 @@ class MetaHandler {
         return results
     }
 
-    private fun setNewConfig(newValue: Double) {
-        ConfigProvider.setConfig(
-            ConfigProvider.config.copy(
-                budgetWeight = newValue
-            )
-        )
-    }
+    private fun setNewConfig(newValue: Any) {
+        val oldConfig = ConfigProvider.config
 
-    private fun setNewConfig(newValue: RevenueDistributionType) {
-        ConfigProvider.setConfig(
-            ConfigProvider.config.copy(
-                revenueDistribution = newValue
-            )
-        )
-    }
+        val constructor = oldConfig::class.primaryConstructor ?: throw IllegalArgumentException("No primary constructor found")
 
+        val params = constructor.parameters.associateWith { param ->
+            if (param.name == ConfigProvider.config.parameterTuning!!.parameter) newValue else oldConfig::class.memberProperties
+                .first { it.name == param.name }
+                .apply { isAccessible = true }
+                .getter.call(oldConfig)
+        }
+
+        val newConfig = constructor.callBy(params)
+
+        ConfigProvider.setConfig(newConfig)
+    }
 
     private fun getTestSet(folderName: String, gen: String): List<String> {
 

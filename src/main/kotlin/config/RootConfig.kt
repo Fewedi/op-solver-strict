@@ -11,6 +11,9 @@ data class ProfileConfig (
     val parameterTuning: ParameterTuning?,
     val runs: Int,
     val testSet: TestSet,
+    val budgetFactor: Double,
+    val clusterElimination: ClusterEliminationMethod,
+    val clusterEliminationThreshold: Double,
     val solver: Solver,
     val ea4op: Ea4opConfig?,
     val gurobi: GurobiConfig?,
@@ -20,12 +23,6 @@ data class ProfileConfig (
     val revenueDistribution: RevenueDistributionType,
     val clusterSize: Int
 )
-
-enum class Mode {
-    RUN,
-    PARAMETERSEARCH,
-    CLUSTERINVESTIGATION
-}
 
 data class ParameterTuning (
     val parameter: String,
@@ -45,6 +42,18 @@ data class GurobiConfig (
     val clusterStartNode: AgregationMethod
 )
 
+enum class ClusterEliminationMethod {
+    BASE,
+    SPARSITY,
+    LAST,
+}
+
+enum class Mode {
+    RUN,
+    PARAMETERSEARCH,
+    CLUSTERINVESTIGATION
+}
+
 enum class TestSet {
     ONE,
     HARD,
@@ -60,7 +69,7 @@ enum class Solver {
 
 enum class Profile {
     clusterInvestigation,
-    gurobiWithFixedEndPoints
+    gurobiRun
 }
 
 enum class DummyStartNode {

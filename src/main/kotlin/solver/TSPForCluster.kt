@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory
 class TSPForCluster {
 
     private val logger = LoggerFactory.getLogger(TSPForCluster::class.java)
-    private val startNodeProvider = StartNodeProvider()
 
     fun provideClusterPathConcorde(clusters: Map<Int, List<Node>>): List<Cluster> {
         val clusterList = clusters.map {
@@ -33,7 +32,7 @@ class TSPForCluster {
         return finalPath
     }
 
-    fun setDistancesToNextClusterAndProvideStartNodes(finalPath: List<Cluster>) {
+    fun setDistancesToNextClusterAndProvideStartNodes(finalPath: List<Cluster>, startNodeProvider: StartNodeProvider) {
         finalPath.forEachIndexed { index, cluster ->
             if (index != finalPath.size - 1) {
                 cluster.nextCluster = finalPath[index + 1]

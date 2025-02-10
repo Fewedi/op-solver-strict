@@ -1,4 +1,4 @@
-activeProfile: gurobiWithFixedEndPoints
+activeProfile: gurobiRun
 
 profiles:
     clusterInvestigation:
@@ -11,6 +11,9 @@ profiles:
             stepSize: 0.2
         runs: 1
         testSet: base
+        budgetFactor: 1.0
+        clusterElimination: base
+        clusterEliminationThreshold: 20.0
         solver: gurobi
         gurobi:
             clusterStartNode: mean
@@ -20,16 +23,19 @@ profiles:
         revenueDistribution: random
         clusterSize: 24
 
-    gurobiWithFixedEndPoints:
-        mode: RUN
+    gurobiRun:
+        mode: PARAMETERSEARCH
         bothRevenueDistribution: false
         parameterTuning:
-            parameter: CONSIDEROUTLIERS
-            startValue: 0.6
-            endValue: 1.4
-            stepSize: 0.2
+            parameter: clusterEliminationThreshold
+            startValue: 0.50
+            endValue: 1.0
+            stepSize: 0.1
         runs: 1
         testSet: base
+        budgetFactor: 1.0
+        clusterElimination: LAST
+        clusterEliminationThreshold: 20.0
         solver: gurobi
         gurobi:
             clusterStartNode: mean

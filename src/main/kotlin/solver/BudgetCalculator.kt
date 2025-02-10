@@ -85,7 +85,8 @@ class BudgetCalculator {
         }
     }
 
-    private fun getMinDistances(cluster: Cluster): Double {
+    fun getMinDistances(cluster: Cluster): Double {
+        if (cluster.endNodes.isEmpty()) return 0.0
         if (cluster.endNodes.first().id == -1) {
             return cluster.startNodes.first().distanceTo(cluster)
         }

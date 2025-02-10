@@ -1,17 +1,16 @@
 package masterthesis
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import masterthesis.config.*
+import masterthesis.config.Solver
 import masterthesis.evaluation.Evaluater
 import masterthesis.evaluation.Visualizer
 import masterthesis.solver.*
-import masterthesis.config.BudgetDistributionMethod
-import masterthesis.config.ClusteringMethod
-import masterthesis.config.ConfigProvider
-import masterthesis.config.Solver
 import masterthesis.solver.legacy.*
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
 import masterthesis.evaluation.Result
+import org.jetbrains.kotlinx.dataframe.math.mean
 import org.slf4j.LoggerFactory
 import solver.ProblemParser
 
@@ -39,15 +38,17 @@ class Solver {
     private val evaluater = Evaluater()
     private val budgetCalculator = BudgetCalculator()
     private val clusterCorrecter = ClusterCorrecter()
+    private val clusterEliminator = ClusterEliminator()
+    private val startNodeProvider = StartNodeProvider()
 
     fun solve(folderName: String, gen: String): Result {
 
         cleanupService.cleanUp()
 
         val startTime = System.nanoTime()
-
         val problemSpace = problemParser.readProblemSpace(folderName, gen)
 
+        val budget = problemSpace.metaData.costLimit.toDouble() * ConfigProvider.config.budgetFactor
         logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.clustering}")
         val clusterMap = when (ConfigProvider.config.clustering) {
             ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
@@ -63,25 +64,34 @@ class Solver {
         val originalClusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
         logger.info("solving cluster TSP done")
 
-        val clusterPath = when (ConfigProvider.config.clustering) {
+        val correctedClusterPath = when (ConfigProvider.config.clustering) {
             ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, ConfigProvider.config.clusterSize) }
             ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, ConfigProvider.config.clusterSize) }
             else -> { originalClusterPath }
         }
 
-        tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath)
+        tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(correctedClusterPath, startNodeProvider)
+
+        val revenueMean = problemSpace.nodeMap.values.map { it.revenue }.mean()
+
+        val clusterPath = when (ConfigProvider.config.clusterElimination) {
+            ClusterEliminationMethod.BASE -> { clusterEliminator.eliminateUnnecessaryClusters(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.SPARSITY -> { clusterEliminator.eliminateUnnecessaryClustersConsiderSparsity(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.LAST -> { clusterEliminator.eliminateClustersFromBack(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+        }
+        logger.info("cluster elimination removed ${correctedClusterPath.size - clusterPath.size} clusters")
 
         when (ConfigProvider.config.budgetDistribution) {
             BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(
                 clusterPath,
-                problemSpace.metaData.costLimit.toDouble()
+                budget
             ) }
-            BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
-            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderDetours(clusterPath, problemSpace.metaData.costLimit.toDouble(),
+            BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, budget) }
+            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderDetours(clusterPath, budget,
                 ConfigProvider.config.budgetWeight) }
-            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, problemSpace.metaData.costLimit.toDouble(),
+            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, budget,
                 ConfigProvider.config.budgetWeight) }
-            BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, problemSpace.metaData.costLimit.toDouble()) }
+            BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, budget) }
         }
 
         logger.info("solving clusters with ${ConfigProvider.config.solver}")
@@ -113,14 +123,14 @@ class Solver {
         }
     }
 
-    fun solveWithGurobi(cluster: Cluster, costLimit: Double) {
+    fun solveWithGurobi(cluster: Cluster, budget: Double) {
         try {
             val startNodeIndex = cluster.nodes.indexOf(cluster.startNodes.first())
             val preparedList =
                 listOf(cluster.nodes[startNodeIndex]) + cluster.nodes.filterIndexed { index, _ -> index != startNodeIndex } + listOf(
                     cluster.endNodes.first()
                 )
-            val solution = gurobiOpSolverClient.solve(objectMapper, preparedList, costLimit)
+            val solution = gurobiOpSolverClient.solve(objectMapper, preparedList, budget)
             cluster.solutionList = problemParser.addSolutionToProblem(
                 preparedList,
                 solution,
@@ -134,14 +144,14 @@ class Solver {
         }
     }
 
-    private fun solveWithEa4op(cluster: Cluster, problemSpace: ProblemSpace, costLimit: Double, path: String) {
+    private fun solveWithEa4op(cluster: Cluster, problemSpace: ProblemSpace, budget: Double, path: String) {
         try {
             problemWriter!!.writeCluster(
                 problemSpace.metaData,
                 problemSpace.distanceMatrix,
                 cluster,
                 path,
-                costLimit
+                budget
             )
             val solution = gkobeagaOpSolverClient.solve(path, objectMapper)
             cluster.solutionList = problemParser.addSolutionToProblem(cluster.solutionMap, solution!!)
