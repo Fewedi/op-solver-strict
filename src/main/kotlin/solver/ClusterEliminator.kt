@@ -5,16 +5,23 @@ import masterthesis.solver.model.Cluster
 
 class ClusterEliminator {
 
-    fun eliminateClustersFromBack(path: MutableList<Cluster>, budget: Double, revenueMean: Double, budgetCalculator: BudgetCalculator, startNodeProvider: StartNodeProvider): List<Cluster> {
+    fun eliminateClustersFromBack(
+        path: MutableList<Cluster>,
+        budget: Double,
+        budgetCalculator: BudgetCalculator,
+        startNodeProvider: StartNodeProvider
+    ): List<Cluster> {
         var change = true
         while (change) {
 
             val fixedPercentage = path.sumOf { budgetCalculator.getMinDistances(it) } / budget
-            if (fixedPercentage > ConfigProvider.config.clusterEliminationThreshold
+            if (fixedPercentage > ConfigProvider.config.parameter.clusterEliminationThreshold
             ) {
-                path.removeLast()
+                val cluster = path.removeLast()
                 change = true
-                updateNeighbour(path.last(), true, startNodeProvider)
+                updateNeighbour(cluster, startNodeProvider)
+            } else {
+                change = false
             }
         }
         return path
@@ -32,11 +39,10 @@ class ClusterEliminator {
             val importance = getImportanceMeasure(path, budget, revenueMean)
             val minImportance = importance.minOrNull()!!
             if (pathNeedsCorrection(path, budget, budgetCalculator)
-                || minImportance < ConfigProvider.config.clusterEliminationThreshold
+                || minImportance < ConfigProvider.config.parameter.clusterEliminationThreshold
             ) {
                 updateNeighbour(
                     path[importance.indexOf(minImportance)],
-                    importance.indexOf(minImportance) == path.size - 1,
                     startNodeProvider
                 )
                 path.removeAt(importance.indexOf(minImportance))
@@ -61,11 +67,10 @@ class ClusterEliminator {
             val importance = getImportanceMeasure(path, budget, revenueMean, clusterSparsityRelative)
             val minImportance = importance.minOrNull()!!
             if (pathNeedsCorrection(path, budget, budgetCalculator)
-                || minImportance < ConfigProvider.config.clusterEliminationThreshold
+                || minImportance < ConfigProvider.config.parameter.clusterEliminationThreshold
             ) {
                 updateNeighbour(
                     path[importance.indexOf(minImportance)],
-                    importance.indexOf(minImportance) == path.size - 1,
                     startNodeProvider
                 )
                 path.removeAt(importance.indexOf(minImportance))
@@ -82,7 +87,7 @@ class ClusterEliminator {
         return minBudget > budget
     }
 
-    private fun updateNeighbour(cluster: Cluster, isLast: Boolean, startNodeProvider: StartNodeProvider) {
+    private fun updateNeighbour(cluster: Cluster, startNodeProvider: StartNodeProvider) {
         cluster.nextCluster?.apply {
             this.prevCluster = cluster.prevCluster
             this.startNodes.clear()
@@ -91,7 +96,7 @@ class ClusterEliminator {
         cluster.prevCluster?.apply {
             this.nextCluster = cluster.nextCluster
             this.endNodes.clear()
-            if (!isLast) this.endNodes.add(startNodeProvider.findEndNode(this))
+            this.endNodes.add(startNodeProvider.findEndNode(this))
         }
     }
 

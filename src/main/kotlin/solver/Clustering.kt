@@ -13,7 +13,7 @@ class Clustering {
 
     fun clusterCapacitated(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList()
-        val max = ConfigProvider.config.clusterSize
+        val max = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         var resultMap: Map<Int, List<Node>> = emptyMap()
@@ -25,13 +25,13 @@ class Clustering {
                 val ri = tempNodes.random()
                 val distancesToClusters = centroids.map { it.distanceTo(ri)}
                 val closestCentroid = centroids
-                    .filterIndexed { index, _ ->  clusterLists[index].size < max  }
+                    .filterIndexed { index, _ ->  clusterLists[index].size <= max  }
                     .minByOrNull { distancesToClusters[centroids.indexOf(it)] }
 
                 val tmep = tempNodes.map { node ->
                     val distToClusters = centroids.map { it.distanceTo(node)}
                     val closestCentroidOfNode = centroids
-                        .filterIndexed { index, _ ->  clusterLists[index].size < max  }
+                        .filterIndexed { index, _ ->  clusterLists[index].size <= max  }
                         .minByOrNull { distToClusters[centroids.indexOf(it)] }
                     val bestDistToCluster = distToClusters[centroids.indexOf(closestCentroidOfNode)]
                     Triple(centroids.indexOf(closestCentroidOfNode) ,bestDistToCluster / node.revenue, node)
@@ -39,7 +39,7 @@ class Clustering {
 
                 tmep.filter { it.first == centroids.indexOf(closestCentroid) }
                     .sortedBy { it.second }
-                    .take(max - clusterLists[centroids.indexOf(closestCentroid)].size)
+                    .take(max - clusterLists[centroids.indexOf(closestCentroid) -1].size)
                     .map { it.third }.let {
                         clusterLists[centroids.indexOf(closestCentroid)].addAll(it)
                         tempNodes.removeAll(it)
@@ -64,7 +64,7 @@ class Clustering {
 
     fun clusterCapacitatedCustom(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList()
-        val max = ConfigProvider.config.clusterSize
+        val max = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         var resultMap: Map<Int, List<Node>> = emptyMap()
@@ -115,7 +115,7 @@ class Clustering {
 
     fun clusterKmeansUpperBoundIgnoreOutliers(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList().sortedByDescending { it.revenue }
-        val max = ConfigProvider.config.clusterSize
+        val max = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         val resultList = MutableList(k) { mutableListOf<Node>() }
@@ -125,7 +125,7 @@ class Clustering {
             resultList.map { it.clear() }
             nodes.forEach { node ->
                 val closestCentroid = centroids.minBy { it.distanceTo(node) }
-                if (resultList[centroids.indexOf(closestCentroid)].size < max) {
+                if (resultList[centroids.indexOf(closestCentroid)].size <= max) {
                     resultList[centroids.indexOf(closestCentroid)].add(node)
                 } else {
                     deadCluster.add(node)
@@ -161,7 +161,7 @@ class Clustering {
 
     fun clusterKmeansUpperBound(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values.toList()
-        val max = ConfigProvider.config.clusterSize
+        val max = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
         var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
         val resultList = List(k) { mutableListOf<Node>() }
@@ -169,7 +169,7 @@ class Clustering {
         for (i in 0 until 100) {
             resultList.map { it.clear() }
             nodes.forEach { node ->
-                val closestCentroid = centroids.filterIndexed { index, _ ->  resultList[index].size < max }
+                val closestCentroid = centroids.filterIndexed { index, _ ->  resultList[index].size <= max }
                     .minByOrNull { it.distanceTo(node) }
                 resultList[centroids.indexOf(closestCentroid)].add(node)
             }
@@ -194,7 +194,7 @@ class Clustering {
 
     fun clusterKmeans(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values
-        val meanClusterSize = ConfigProvider.config.clusterSize
+        val meanClusterSize = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / meanClusterSize.toDouble()).toInt()
         return kmeans(nodes.toList(), k)
     }
@@ -220,12 +220,12 @@ class Clustering {
 
     fun clusterKmeansWithSplitting(nodeMap: Map<Int, Node>): Map<Int, List<Node>> {
         val nodes = nodeMap.values
-        val meanClusterSize = ConfigProvider.config.clusterSize
+        val meanClusterSize = ConfigProvider.config.parameter.clusterSize
         val k = ceil(nodes.size.toDouble() / meanClusterSize.toDouble()).toInt()
         var clusters = kmeans(nodes.toList(), k).values.toList()
-        while (clusters.any {it.size > meanClusterSize}) {
+        while (clusters.any {it.size >= meanClusterSize}) {
             clusters = clusters.map {
-                if (it.size <= meanClusterSize) {
+                if (it.size < meanClusterSize) {
                     listOf(it)
                 } else {
                     val newK = ceil(it.size.toDouble() / meanClusterSize.toDouble()).toInt()

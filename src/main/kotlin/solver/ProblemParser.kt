@@ -23,7 +23,7 @@ class ProblemParser {
 
         val nodeMap = HashMap<Int, Node>()
 
-        val getRevenue = when (ConfigProvider.config.revenueDistribution) {
+        val getRevenue = when (ConfigProvider.config.instance.revenueDistribution) {
             RevenueDistributionType.RANDOM -> ::getRevenueRandom
             RevenueDistributionType.FLAT-> ::getRevenueFlat
         }

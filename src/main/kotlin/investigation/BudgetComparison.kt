@@ -43,7 +43,7 @@ class BudgetComparison {
 
         val max = problemSpace.nodeMap.values.map { node -> problemSpace.nodeMap.values.map{ it.distanceTo(node) }}.flatten().max()
 
-        val clusterMap = when (ConfigProvider.config.clustering) {
+        val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
             ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }

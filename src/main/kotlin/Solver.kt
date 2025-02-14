@@ -20,13 +20,13 @@ class Solver {
     private val cleanupService = CleanupService()
     private val problemParser = ProblemParser()
     private val clustering = Clustering()
-    private val problemWriter: ProblemWriter? = when (ConfigProvider.config.ea4op?.startEntries) {
+    private val problemWriter: ProblemWriter? = when (ConfigProvider.config.algorithm.ea4op?.startEntries) {
         0 -> ProblemWriterWithDummy()
         1 -> ProblemWriterNoDummy()
         else -> null
     }
     private val objectMapper = jacksonObjectMapper().apply {
-        when (ConfigProvider.config.solver) {
+        when (ConfigProvider.config.algorithm.solver) {
             Solver.gurobi -> setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.UPPER_CAMEL_CASE)
             Solver.ea4op -> setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE)
         }
@@ -47,10 +47,11 @@ class Solver {
 
         val startTime = System.nanoTime()
         val problemSpace = problemParser.readProblemSpace(folderName, gen)
+        val clusterSize = ConfigProvider.config.parameter.clusterSize - 1
 
-        val budget = problemSpace.metaData.costLimit.toDouble() * ConfigProvider.config.budgetFactor
-        logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.clustering}")
-        val clusterMap = when (ConfigProvider.config.clustering) {
+        val budget = problemSpace.metaData.costLimit.toDouble() * ConfigProvider.config.instance.budgetFactor
+        logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.algorithm.clustering}")
+        val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
             ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }
@@ -60,13 +61,16 @@ class Solver {
         }
         logger.info("clustering done")
 
-        logger.info("solving cluster TSP with ${clusterMap.size} clusters in concorde")
-        val originalClusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
-        logger.info("solving cluster TSP done")
+        logger.info("solving cluster path with ${clusterMap.size} clusters")
+        val originalClusterPath = when (ConfigProvider.config.algorithm.clusterConnector) {
+            ClusterConnector.TSP -> { tSPForCluster.provideClusterPathConcorde(clusterMap) }
+            ClusterConnector.OP -> { tSPForCluster.provideClusterPathOp(clusterMap, budget, objectMapper, gurobiOpSolverClient, problemParser) }
+        }
+        logger.info("solving cluster path done")
 
-        val correctedClusterPath = when (ConfigProvider.config.clustering) {
-            ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, ConfigProvider.config.clusterSize) }
-            ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, ConfigProvider.config.clusterSize) }
+        val correctedClusterPath = when (ConfigProvider.config.algorithm.clustering) {
+            ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, clusterSize) }
+            ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, clusterSize) }
             else -> { originalClusterPath }
         }
 
@@ -74,30 +78,31 @@ class Solver {
 
         val revenueMean = problemSpace.nodeMap.values.map { it.revenue }.mean()
 
-        val clusterPath = when (ConfigProvider.config.clusterElimination) {
+        val clusterPath = when (ConfigProvider.config.algorithm.clusterElimination) {
             ClusterEliminationMethod.BASE -> { clusterEliminator.eliminateUnnecessaryClusters(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
             ClusterEliminationMethod.SPARSITY -> { clusterEliminator.eliminateUnnecessaryClustersConsiderSparsity(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
-            ClusterEliminationMethod.LAST -> { clusterEliminator.eliminateClustersFromBack(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.LAST -> { clusterEliminator.eliminateClustersFromBack(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.NONE -> { correctedClusterPath }
         }
         logger.info("cluster elimination removed ${correctedClusterPath.size - clusterPath.size} clusters")
 
-        when (ConfigProvider.config.budgetDistribution) {
+        when (ConfigProvider.config.algorithm.budgetDistribution) {
             BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(
                 clusterPath,
                 budget
             ) }
             BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, budget) }
             BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderDetours(clusterPath, budget,
-                ConfigProvider.config.budgetWeight) }
+                ConfigProvider.config.parameter.budgetWeight) }
             BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, budget,
-                ConfigProvider.config.budgetWeight) }
+                ConfigProvider.config.parameter.budgetWeight) }
             BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, budget) }
         }
 
-        logger.info("solving clusters with ${ConfigProvider.config.solver}")
+        logger.info("solving clusters with ${ConfigProvider.config.algorithm.solver}")
         try {
             val clusters = clusterPath.map { cluster ->
-                when (ConfigProvider.config.solver) {
+                when (ConfigProvider.config.algorithm.solver) {
                     Solver.gurobi -> {
                         solveWithGurobi(cluster, cluster.budget)
                     }

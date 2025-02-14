@@ -61,14 +61,14 @@ class MetaHandler {
     }
 
     private fun getResultName(prefix: String): String {
-        val budgetDistribution = when(ConfigProvider.config.budgetDistribution) {
+        val budgetDistribution = when(ConfigProvider.config.algorithm.budgetDistribution) {
             BudgetDistributionMethod.CONSIDEROUTLIERS -> "co"
             BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> "cm"
             BudgetDistributionMethod.ELZEIN -> "e"
             BudgetDistributionMethod.ELZEINWITHMIN -> "em"
             BudgetDistributionMethod.NAIVE -> "n"
         }
-        val flatness = ConfigProvider.config.revenueDistribution.name.lowercase()
+        val flatness = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val paramName = ConfigProvider.config.parameterTuning?.parameter?.lowercase() ?: "none"
         return "${prefix}_${flatness}_${budgetDistribution}_${paramName}.csv"
     }
@@ -120,15 +120,15 @@ class MetaHandler {
     }
 
     private fun setNewConfig(newValue: Any) {
-        val oldConfig = ConfigProvider.config
+        val oldParamConfig = ConfigProvider.config
 
-        val constructor = oldConfig::class.primaryConstructor ?: throw IllegalArgumentException("No primary constructor found")
+        val constructor = oldParamConfig::class.primaryConstructor ?: throw IllegalArgumentException("No primary constructor found")
 
         val params = constructor.parameters.associateWith { param ->
-            if (param.name == ConfigProvider.config.parameterTuning!!.parameter) newValue else oldConfig::class.memberProperties
+            if (param.name == ConfigProvider.config.parameterTuning!!.parameter) newValue else oldParamConfig.parameter::class.memberProperties
                 .first { it.name == param.name }
                 .apply { isAccessible = true }
-                .getter.call(oldConfig)
+                .getter.call(oldParamConfig.parameter)
         }
 
         val newConfig = constructor.callBy(params)
@@ -158,7 +158,7 @@ class MetaHandler {
         )
 
         return fileNames.filter {
-            when (ConfigProvider.config.testSet) {
+            when (ConfigProvider.config.instance.testSet) {
                 TestSet.ONE -> listOf("eil101-$gen-50")
                 TestSet.HARD -> listOf("rd400-$gen-50")
                 TestSet.BASE -> baseList

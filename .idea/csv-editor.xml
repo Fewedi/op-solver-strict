@@ -31,6 +31,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/parameters_random_em_clusteropbudget.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results/legacy/parameterSearch.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/results/legacy/parameters-cm-random.csv">
           <value>
             <Attribute>
@@ -151,6 +165,13 @@
           </value>
         </entry>
         <entry key="/results_random_em_clustereliminationthreshold.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

@@ -2,45 +2,55 @@ activeProfile: gurobiRun
 
 profiles:
     clusterInvestigation:
-        mode: CLUSTERINVESTIGATION
+        mode: clusterInvestigation
         bothRevenueDistribution: false
-        parameterTuning:
-            parameter: CONSIDEROUTLIERS
-            startValue: 0.6
-            endValue: 1.4
-            stepSize: 0.2
         runs: 1
-        testSet: base
-        budgetFactor: 1.0
-        clusterElimination: base
-        clusterEliminationThreshold: 20.0
-        solver: gurobi
-        gurobi:
-            clusterStartNode: mean
-        clustering: KMEANSSPLIT
-        budgetDistribution: ELZEINWITHMIN
-        budgetWeight: 0.2
-        revenueDistribution: random
-        clusterSize: 24
+        parameterTuning:
+            parameter: clusterOpBudget
+            startValue: 0.30
+            endValue: 0.90
+            stepSize: 0.1
+        instance:
+            testSet: base
+            budgetFactor: 1.0
+            revenueDistribution: random
+        algorithm:
+            solver: gurobi
+            clusterConnector: op
+            clusterElimination: none
+            clustering: KMEANSSPLIT
+            budgetDistribution: ELZEINWITHMIN # considerClusterMean, considerClusterMedian, considerClusterMeanAndMedian, considerClusterMeanAndMedianWithOutliers, considerClusterMeanAndMedianWithOutliersAndOutliers, considerClusterMeanAndMedianWithOutliersAndOutliersAndClusterSize
+            gurobi:
+                clusterStartNode: mean
+        parameter:
+            clusterOpBudget: 0.4
+            clusterEliminationThreshold: 0.6
+            budgetWeight: 0.2
+            clusterSize: 25
 
     gurobiRun:
-        mode: PARAMETERSEARCH
+        mode: RUN  # Possible values: RUN, PARAMETERSEARCH, CLUSTERINVESTIGATION
         bothRevenueDistribution: false
+        runs: 10
         parameterTuning:
-            parameter: clusterEliminationThreshold
-            startValue: 0.50
-            endValue: 1.0
+            parameter: clusterOpBudget
+            startValue: 0.30
+            endValue: 0.90
             stepSize: 0.1
-        runs: 1
-        testSet: base
-        budgetFactor: 1.0
-        clusterElimination: LAST
-        clusterEliminationThreshold: 20.0
-        solver: gurobi
-        gurobi:
-            clusterStartNode: mean
-        clustering: KMEANSSPLIT
-        budgetDistribution: ELZEINWITHMIN # considerClusterMean, considerClusterMedian, considerClusterMeanAndMedian, considerClusterMeanAndMedianWithOutliers, considerClusterMeanAndMedianWithOutliersAndOutliers, considerClusterMeanAndMedianWithOutliersAndOutliersAndClusterSize
-        budgetWeight: 0.2
-        revenueDistribution: random
-        clusterSize: 24
+        instance:
+            testSet: base  # Possible values: ONE, HARD, BASE, ALL, TRAIN
+            budgetFactor: 0.5
+            revenueDistribution: random  # Possible values: RANDOM, FLAT
+        algorithm:
+            solver: gurobi  # Possible values: gurobi, ea4op
+            clusterConnector: op  # Possible values: TSP, OP
+            clusterElimination: none  # Possible values: BASE, SPARSITY, LAST, NONE
+            clustering: KMEANSUPPERBOUNDIGNOREOUTLIERS  # Possible values: KMEANS, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSSPLIT
+            budgetDistribution: ELZEINWITHMIN  # Possible values: ELZEIN, ELZEINWITHMIN, CONSIDEROUTLIERS, CONSIDERCLUSTERMEAN, NAIVE
+            gurobi:
+                clusterStartNode: mean  # Possible values: MEAN, MEDIAN, NONE
+        parameter:
+            clusterOpBudget: 0.5
+            clusterEliminationThreshold: 0.4
+            budgetWeight: 0.2
+            clusterSize: 25

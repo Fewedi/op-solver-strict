@@ -21,7 +21,6 @@ import java.io.File
 import java.math.BigDecimal
 import kotlin.math.min
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.isAccessible
 
 class Visualizer {
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
@@ -226,15 +225,17 @@ class Visualizer {
 
             Mode.PARAMETERSEARCH -> {
                 when (config.parameterTuning!!.parameter) {
-                    "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.budgetFactor}.png"
-                    "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.clusterEliminationThreshold}.png"
-                    "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.budgetWeight}.png"
+                    "clusterSize" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterSize}.png"
+                    "clusterOpBudget" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterOpBudget}.png"
+                    "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.instance.budgetFactor}.png"
+                    "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationThreshold}.png"
+                    "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.budgetWeight}.png"
                     else -> "$name/$shortName-$totalRevenue.png"
                 }
             }
 
             Mode.CLUSTERINVESTIGATION -> {
-                val param = config.budgetWeight
+                val param = config.parameter.budgetWeight
                 "$name/$shortName-$totalRevenue-$param.png"
             }
         }

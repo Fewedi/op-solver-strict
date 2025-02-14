@@ -8,20 +8,34 @@ data class RootConfig (
 data class ProfileConfig (
     val mode: Mode,
     val bothRevenueDistribution: Boolean,
-    val parameterTuning: ParameterTuning?,
     val runs: Int,
-    val testSet: TestSet,
-    val budgetFactor: Double,
-    val clusterElimination: ClusterEliminationMethod,
+    val parameterTuning: ParameterTuning?,
+    val instance: Instance,
+    val algorithm: Algorithm,
+    val parameter: Parameter,
+)
+
+data class Parameter (
+    val clusterOpBudget: Double,
     val clusterEliminationThreshold: Double,
+    val budgetWeight: Double,
+    val clusterSize: Int
+)
+
+data class Algorithm (
     val solver: Solver,
     val ea4op: Ea4opConfig?,
     val gurobi: GurobiConfig?,
     val clustering: ClusteringMethod,
     val budgetDistribution: BudgetDistributionMethod,
-    val budgetWeight: Double,
+    val clusterConnector: ClusterConnector,
+    val clusterElimination: ClusterEliminationMethod
+)
+
+data class Instance (
+    val testSet: TestSet,
+    val budgetFactor: Double,
     val revenueDistribution: RevenueDistributionType,
-    val clusterSize: Int
 )
 
 data class ParameterTuning (
@@ -42,10 +56,16 @@ data class GurobiConfig (
     val clusterStartNode: AgregationMethod
 )
 
+enum class ClusterConnector {
+    TSP,
+    OP
+}
+
 enum class ClusterEliminationMethod {
     BASE,
     SPARSITY,
     LAST,
+    NONE
 }
 
 enum class Mode {
