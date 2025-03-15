@@ -31,26 +31,26 @@ profiles:
     gurobiRun:
         mode: RUN  # Possible values: RUN, PARAMETERSEARCH, CLUSTERINVESTIGATION
         bothRevenueDistribution: false
-        runs: 10
+        runs: 1
         parameterTuning:
             parameter: clusterOpBudget
             startValue: 0.30
             endValue: 0.90
             stepSize: 0.1
         instance:
-            testSet: base  # Possible values: ONE, HARD, BASE, ALL, TRAIN
-            budgetFactor: 0.5
+            testSet: one  # Possible values: ONE, HARD, BASE, ALL, TRAIN
+            budgetFactor: 1.00
             revenueDistribution: random  # Possible values: RANDOM, FLAT
         algorithm:
             solver: gurobi  # Possible values: gurobi, ea4op
             clusterConnector: op  # Possible values: TSP, OP
             clusterElimination: none  # Possible values: BASE, SPARSITY, LAST, NONE
-            clustering: KMEANSUPPERBOUNDIGNOREOUTLIERS  # Possible values: KMEANS, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSSPLIT
+            clustering: KMEANSFLOW  # Possible values: KMEANS, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSSPLIT, KMEANSFLOW
             budgetDistribution: ELZEINWITHMIN  # Possible values: ELZEIN, ELZEINWITHMIN, CONSIDEROUTLIERS, CONSIDERCLUSTERMEAN, NAIVE
             gurobi:
                 clusterStartNode: mean  # Possible values: MEAN, MEDIAN, NONE
         parameter:
-            clusterOpBudget: 0.5
+            clusterOpBudget: 0.4
             clusterEliminationThreshold: 0.4
             budgetWeight: 0.2
             clusterSize: 25

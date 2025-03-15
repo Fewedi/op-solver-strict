@@ -171,7 +171,49 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/results_random_em_clusteropbudget.csv">
+        <entry key="/results_random_em_clusteropbudget_30_25.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_30_half.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_40_25.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_50_25.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_50_half.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_60_75.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results_random_em_clusteropbudget_60_half.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

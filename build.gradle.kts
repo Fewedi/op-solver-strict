@@ -19,6 +19,7 @@ val kandyLetsPlotVersion = "0.7.0"
 val slf4jVersion = "2.0.16"
 val gurobiVersion = "12.0.0"
 val kotlinCsvVersion = "1.10.0"
+val ortoolsVersion = "9.12.4544"
 
 
 dependencies {
@@ -35,6 +36,9 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:$slf4jVersion")
 
     implementation("com.gurobi:gurobi:$gurobiVersion")
+
+    implementation("com.google.ortools:ortools-java:$ortoolsVersion")
+
 
     testImplementation(kotlin("test"))
 }

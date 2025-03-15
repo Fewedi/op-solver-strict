@@ -70,7 +70,9 @@ class MetaHandler {
         }
         val flatness = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val paramName = ConfigProvider.config.parameterTuning?.parameter?.lowercase() ?: "none"
-        return "${prefix}_${flatness}_${budgetDistribution}_${paramName}.csv"
+        val op = (ConfigProvider.config.parameter.clusterOpBudget * 100).toInt().toString()
+        val budget = (ConfigProvider.config.instance.budgetFactor * 100).toInt().toString()
+        return "${prefix}_${flatness}_${budgetDistribution}_${paramName}_${op}_${budget}.csv"
     }
 
     private fun runParameterSearch(

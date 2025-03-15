@@ -50,6 +50,7 @@ class BudgetComparison {
             ClusteringMethod.KMEANSCAPACITATED -> { clustering.clusterCapacitated(problemSpace.nodeMap) }
             ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap) }
             ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap) }
         }
 
         val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)

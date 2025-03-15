@@ -110,7 +110,8 @@ enum class ClusteringMethod {
     KMEANSUPPERBOUNDIGNOREOUTLIERS,
     KMEANSCAPACITATED,
     KMEANSCAPACITATEDCUSTOM,
-    KMEANSSPLIT
+    KMEANSSPLIT,
+    KMEANSFLOW
 }
 
 enum class RevenueDistributionType {
