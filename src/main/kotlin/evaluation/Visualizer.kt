@@ -15,6 +15,7 @@ import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 import org.jetbrains.kotlinx.kandy.letsplot.layers.points
 import org.jetbrains.kotlinx.kandy.letsplot.multiplot.plotBunch
+import org.jetbrains.kotlinx.kandy.letsplot.scales.guide.LegendType
 import org.jetbrains.kotlinx.kandy.letsplot.settings.Symbol
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -23,6 +24,7 @@ import kotlin.math.min
 import kotlin.reflect.full.memberProperties
 
 class Visualizer {
+
     private val logger = LoggerFactory.getLogger(Visualizer::class.java)
 
     fun plotClusterMetrics(clusters: List<ClusterMetric>, xMetric: String, yMetric: String) {
@@ -32,11 +34,11 @@ class Visualizer {
 
         val xs = when (xProp?.get(clusters.first())) {
             is BigDecimal -> {
-                clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                clusters.map { xProp.get(it) as BigDecimal }.map { it.toDouble() }
             }
 
             is Int -> {
-                clusters.map { xProp?.get(it) as Int }.map { it.toDouble() }
+                clusters.map { xProp.get(it) as Int }.map { it.toDouble() }
             }
 
             else -> {
@@ -45,11 +47,11 @@ class Visualizer {
         }
         val ys = when (yProp?.get(clusters.first())) {
             is BigDecimal -> {
-                clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                clusters.map { yProp.get(it) as BigDecimal }.map { it.toDouble() }
             }
 
             is Int -> {
-                clusters.map { yProp?.get(it) as Int }.map { it.toDouble() }
+                clusters.map { yProp.get(it) as Int }.map { it.toDouble() }
             }
 
             else -> {
@@ -92,11 +94,11 @@ class Visualizer {
 
                 val xs = when (xProp?.get(clusters.first())) {
                     is BigDecimal -> {
-                        clusters.map { xProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                        clusters.map { xProp.get(it) as BigDecimal }.map { it.toDouble() }
                     }
 
                     is Int -> {
-                        clusters.map { xProp?.get(it) as Int }.map { it.toDouble() }
+                        clusters.map { xProp.get(it) as Int }.map { it.toDouble() }
                     }
 
                     else -> {
@@ -105,11 +107,11 @@ class Visualizer {
                 }
                 val ys = when (yProp?.get(clusters.first())) {
                     is BigDecimal -> {
-                        clusters.map { yProp?.get(it) as BigDecimal }.map { it.toDouble() }
+                        clusters.map { yProp.get(it) as BigDecimal }.map { it.toDouble() }
                     }
 
                     is Int -> {
-                        clusters.map { yProp?.get(it) as Int }.map { it.toDouble() }
+                        clusters.map { yProp.get(it) as Int }.map { it.toDouble() }
                     }
 
                     else -> {
@@ -157,10 +159,11 @@ class Visualizer {
         val endPosX = clusters.filter { it.endNodes.first().id != -1 }.map { it.endNodes.first().x }
         val endPosY = clusters.filter { it.endNodes.first().id != -1 }.map { it.endNodes.first().y }
 
-        val xs = clusterMap.values.map { it.x }
-        val ys = clusterMap.values.map { it.y }
-        val cluster = clusterMap.values.map { it.cluster }
-        val revenue = clusterMap.values.map { it.revenue }
+        val nodeList = clusterMap.entries.toList().sortedBy { it.value.cluster }
+        val xs = nodeList.map { it.value.x }
+        val ys = nodeList.map { it.value.y }
+        val cluster = nodeList.map { it.value.cluster.toString() }
+        val revenue = nodeList.map { it.value.revenue }
 
         val paths = if (totalRevenue > 0) {
             clusters.map { c ->
@@ -180,24 +183,39 @@ class Visualizer {
         plot {
             // Plot the first dataset (clusterDataSet)
             points {
-                x(startPosX)
-                y(startPosY)
+                x(startPosX) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())
+                }
+                y(startPosY) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())
+                }
                 symbol = Symbol.CIRCLE_OPEN
+                size = 3.0
             }
 
             points {
-                x(endPosX)
-                y(endPosY)
+                x(endPosX) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())
+                }
+                y(endPosY) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())
+                }
                 symbol = Symbol.CROSS
+                size = 3.0
             }
 
             // Plot the second dataset (dataset)
             points {
-                x(xs)
-                y(ys)
+                x(xs) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())}
+                y(ys) {
+                    axis.breaksLabeled(emptyList<Double>(),listOf())
+                }
                 color(cluster) {
+                    legend.type = LegendType.DiscreteLegend(nRow = 13, nCol = clusters.size.div(13) + 1)
                     scale = categorical()
                 }
+                size = 2.0
                 alpha(revenue) {
                     scale = continuous(range = (0.1..1.0))
                 }
@@ -210,33 +228,37 @@ class Visualizer {
                     y(it.toList().map { it.y })
                 }
             }
+
+            layout {
+                size = 600 to 400
+            }
         }.save(getName(name, shortName, totalRevenue))
     }
 
-    private fun getName(name: String, shortName: String, totalRevenue: Int): String {
+
+    fun getName(name: String, shortName: String, totalRevenue: Int, fileType: String = "svg"): String {
 
         val config = ConfigProvider.config
 
 
         return when (config.mode) {
             Mode.RUN -> {
-                "$name/$shortName-$totalRevenue.png"
+                "$name/$shortName-$totalRevenue.$fileType"
             }
 
             Mode.PARAMETERSEARCH -> {
                 when (config.parameterTuning!!.parameter) {
-                    "clusterSize" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterSize}.png"
-                    "clusterOpBudget" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterOpBudget}.png"
-                    "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.instance.budgetFactor}.png"
-                    "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationThreshold}.png"
-                    "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.budgetWeight}.png"
-                    else -> "$name/$shortName-$totalRevenue.png"
+                    "clusterSize" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterSize}.$fileType"
+                    "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.instance.budgetFactor}.$fileType"
+                    "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationThreshold}.$fileType"
+                    "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.budgetWeight}.$fileType"
+                    else -> "$name/$shortName-$totalRevenue.$fileType"
                 }
             }
 
-            Mode.CLUSTERINVESTIGATION -> {
+            Mode.CLUSTERINVESTIGATION, Mode.COMPARERESULTS-> {
                 val param = config.parameter.budgetWeight
-                "$name/$shortName-$totalRevenue-$param.png"
+                "$name/$shortName-$totalRevenue-$param.$fileType"
             }
         }
     }

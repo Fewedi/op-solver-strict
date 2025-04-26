@@ -5,12 +5,11 @@ import masterthesis.config.*
 import masterthesis.config.Solver
 import masterthesis.evaluation.Evaluater
 import masterthesis.evaluation.Visualizer
+import masterthesis.evaluation.model.Result
 import masterthesis.solver.*
 import masterthesis.solver.legacy.*
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
-import masterthesis.evaluation.Result
-import org.jetbrains.kotlinx.dataframe.math.mean
 import org.slf4j.LoggerFactory
 import solver.ProblemParser
 
@@ -33,7 +32,7 @@ class Solver {
     }
     private val gkobeagaOpSolverClient = GkobeagaOpSolverClient()
     private val gurobiOpSolverClient = GurobiClient()
-    private val tSPForCluster = TSPForCluster()
+    private val tSPForCluster = ClusterPathGenerator()
     private val visualizer = Visualizer()
     private val evaluater = Evaluater()
     private val budgetCalculator = BudgetCalculator()
@@ -51,15 +50,15 @@ class Solver {
 
         val budget = problemSpace.metaData.costLimit.toDouble() * ConfigProvider.config.instance.budgetFactor
         logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.algorithm.clustering}")
+        val statistic = ConfigProvider.config.algorithm.clusteringStatistic
         val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
-            ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSCAPACITATED -> { clustering.clusterCapacitated(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap, statistic) }
+            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap, statistic) }
+            ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap, statistic) }
+            ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap, statistic) }
         }
+
+        DataCapturing.addClusterSize(clusterMap.map { it.value.size })
         logger.info("clustering done")
 
         logger.info("solving cluster path with ${clusterMap.size} clusters")
@@ -71,13 +70,13 @@ class Solver {
 
         val correctedClusterPath = when (ConfigProvider.config.algorithm.clustering) {
             ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, clusterSize) }
-            ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, clusterSize) }
+            //ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, clusterSize) }
             else -> { originalClusterPath }
         }
 
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(correctedClusterPath, startNodeProvider)
 
-        val revenueMean = problemSpace.nodeMap.values.map { it.revenue }.mean()
+        val revenueMean = problemSpace.nodeMap.values.map { it.revenue }.average()
 
         val clusterPath = when (ConfigProvider.config.algorithm.clusterElimination) {
             ClusterEliminationMethod.BASE -> { clusterEliminator.eliminateUnnecessaryClusters(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }

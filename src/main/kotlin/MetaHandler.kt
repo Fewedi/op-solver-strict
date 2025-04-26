@@ -2,6 +2,11 @@ package masterthesis
 
 import masterthesis.config.*
 import masterthesis.evaluation.*
+import masterthesis.evaluation.model.AggregatedResult
+import masterthesis.evaluation.model.ExperimentSpecification
+import masterthesis.evaluation.model.ParameterSearchResult
+import masterthesis.evaluation.model.Result
+import masterthesis.evaluation.model.ResultOutput
 import masterthesis.investigation.BudgetComparison
 import masterthesis.solver.legacy.CleanupService
 import org.slf4j.LoggerFactory
@@ -20,6 +25,8 @@ class MetaHandler {
     private val csvClient = CsvClient()
     private val solver = Solver()
     private val budgetComparison = BudgetComparison()
+    private val resultMerger = ResultMerger()
+
 
     fun runAll() {
         cleanupService.finalCleanUp()
@@ -41,8 +48,10 @@ class MetaHandler {
 
         when (ConfigProvider.config.mode) {
             Mode.RUN -> {
-                val results = runTestCases(fileNames, solver, gen)
-                csvClient.writeCsv(results, getResultName("results"))
+                val experimentString = getExperimentString()
+                logger.info("----- Running experiment: $experimentString -----")
+                val results = runTestCases(fileNames, solver, gen, experimentString)
+                csvClient.writeCsv(results, experimentString.toFileNameString(), "results/")
             }
             Mode.PARAMETERSEARCH -> {
                 val valueList: MutableList<Double> = mutableListOf()
@@ -57,6 +66,9 @@ class MetaHandler {
             Mode.CLUSTERINVESTIGATION -> {
                 budgetComparison.prepareMultipleRuns(fileNames, gen)
             }
+            Mode.COMPARERESULTS -> {
+                resultMerger.mergeResults(csvClient)
+            }
         }
     }
 
@@ -70,7 +82,7 @@ class MetaHandler {
         }
         val flatness = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val paramName = ConfigProvider.config.parameterTuning?.parameter?.lowercase() ?: "none"
-        val op = (ConfigProvider.config.parameter.clusterOpBudget * 100).toInt().toString()
+        val op = (ConfigProvider.config.parameter.clusterEliminationThreshold * 100).toInt().toString()
         val budget = (ConfigProvider.config.instance.budgetFactor * 100).toInt().toString()
         return "${prefix}_${flatness}_${budgetDistribution}_${paramName}_${op}_${budget}.csv"
     }
@@ -84,7 +96,8 @@ class MetaHandler {
         val resultsCase = fileNames.map { ParameterSearchResult(name = it, values = mutableListOf()) }
         valueList.map { newValue ->
             setNewConfig(newValue)
-            val results = runTestCases(fileNames, solver, gen)
+            val experimentString = getExperimentString()
+            val results = runTestCases(fileNames, solver, gen, experimentString)
             results.forEach { result ->
                 when (result) {
                     is ResultOutput ->
@@ -99,7 +112,7 @@ class MetaHandler {
         return resultsCase
     }
 
-    private fun runTestCases(fileNames: List<String>, solver: Solver, gen: String): List<Any> {
+    private fun runTestCases(fileNames: List<String>, solver: Solver, gen: String, experimentSpecification: ExperimentSpecification): List<Any> {
         val results = fileNames.map { fileName ->
             logger.info("Solving $fileName")
 
@@ -117,7 +130,13 @@ class MetaHandler {
             } else {
                 aggregateResults(results)
             }
+            logger.info("Mean cluster size: ${DataCapturing.clusterSizes.average()}")
+            logger.info("Mean nodes in dead cluster to all nodes: ${DataCapturing.nodesInDeadCluster.average()}")
+            logger.info("Mean revenue in dead cluster to overall revenue: ${DataCapturing.revenueInDeadCluster.average()}")
+
+            csvClient.writeLineToCsv(experimentSpecification.getExperimentResultsInstance(), fileName)
         }
+        csvClient.writeLineToCsv(experimentSpecification.getExperimentResultsGlobal(), "global")
         return results
     }
 
@@ -162,7 +181,7 @@ class MetaHandler {
         return fileNames.filter {
             when (ConfigProvider.config.instance.testSet) {
                 TestSet.ONE -> listOf("eil101-$gen-50")
-                TestSet.HARD -> listOf("rd400-$gen-50")
+                TestSet.HARD -> listOf("fl1400-$gen-50","lin318-$gen-50")
                 TestSet.BASE -> baseList
                 TestSet.TRAIN -> fileNames - baseList.toSet()
                 TestSet.ALL -> fileNames
@@ -181,7 +200,10 @@ class MetaHandler {
             revenueMin = successfulResults.minOf { it.revenue },
             revenueAvg = successfulResults.sumOf { it.revenue } / maxOf(results.filter { it.successful }.size, 1),
             revenueMax = successfulResults.maxOf { it.revenue },
-            budgetSpentAvg = successfulResults.sumOf { it.budgetSpent } / maxOf(results.filter { it.successful }.size, 1),
+            budgetSpentAvg = successfulResults.sumOf { it.budgetSpent } / maxOf(
+                results.filter { it.successful }.size,
+                1
+            ),
             timeMin = successfulResults.minOf { it.time },
             timeAvg = (successfulResults.sumOf { it.time } / maxOf(results.filter { it.successful }.size, 1)).let {
                 BigDecimal(it).setScale(
@@ -202,6 +224,63 @@ class MetaHandler {
             revenue = result.revenue,
             budgetSpent = result.budgetSpent,
             time = result.time
+        )
+    }
+
+    private fun getExperimentString(): ExperimentSpecification{
+        //E = (set,mode,runs,budgetfactor,k,clustering,elimination,R',budgetdist)
+        val set = ConfigProvider.config.instance.testSet.name.lowercase()
+        val mode = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
+        val runs = ConfigProvider.config.runs
+        val budgetFactor = BigDecimal.valueOf(ConfigProvider.config.instance.budgetFactor).setScale(2)
+        val k = ConfigProvider.config.parameter.clusterSize
+        val clustering = ConfigProvider.config.algorithm.clustering.let {
+            when (it) {
+                ClusteringMethod.KMEANS -> "k"
+                ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> "nck"
+                ClusteringMethod.KMEANSSPLIT -> "rk"
+                ClusteringMethod.KMEANSFLOW -> "fbck"
+                ClusteringMethod.KMEANSANDCORRECTLATER -> "clk"
+            }
+        } + ConfigProvider.config.algorithm.clusteringStatistic.let{
+            when (it) {
+                AggregationMethod.MEAN -> "mn"
+                AggregationMethod.MEDIAN -> "md"
+            }
+        }
+        val elimination = ConfigProvider.config.let {
+            when (it.algorithm.clusterConnector) {
+                ClusterConnector.OP -> "op"
+                ClusterConnector.TSP -> {
+                    when (it.algorithm.clusterElimination) {
+                        ClusterEliminationMethod.LAST -> "tsprfb"
+                        ClusterEliminationMethod.BASE -> "tsprce"
+                        ClusterEliminationMethod.SPARSITY -> "tsprcs"
+                        ClusterEliminationMethod.NONE -> "tspn-deprec"
+                    }
+                }
+            }
+        }
+        val r = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationThreshold).setScale(2)
+        val budgetDist = ConfigProvider.config.algorithm.budgetDistribution.let {
+            when (it) {
+                BudgetDistributionMethod.CONSIDEROUTLIERS -> "mldc"
+                BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> "mlsc"
+                BudgetDistributionMethod.ELZEIN -> "ea4op"
+                BudgetDistributionMethod.ELZEINWITHMIN -> "ea4opml"
+                BudgetDistributionMethod.NAIVE -> "eq"
+            }
+        }
+        return ExperimentSpecification(
+            set = set,
+            mode = mode,
+            runs = runs,
+            budgetFactor = budgetFactor,
+            k = k,
+            clustering = clustering,
+            elimination = elimination,
+            r = r,
+            budgetDist = budgetDist
         )
     }
 }

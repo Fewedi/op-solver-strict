@@ -44,3 +44,11 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/results/
+/lets-plot-images/
+/src/main/resources/concorde/
+/src/main/resources/op-solver/
+/src/main/resources/OPLib/
+/prob.sol
+/OTSP_problem.mas
+/TSP_problem.mas

@@ -1,5 +1,7 @@
 package masterthesis.evaluation
 
+import masterthesis.DataCapturing
+import masterthesis.evaluation.model.Result
 import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.ProblemSpace
 import org.slf4j.LoggerFactory
@@ -11,11 +13,15 @@ class Evaluater {
     private val logger = LoggerFactory.getLogger(Evaluater::class.java)
     fun evaluateResult(problemSpace: ProblemSpace, clusters: List<Cluster>, duration: Double, name: String,clusterPath: List<Cluster>, visualizer: Visualizer) : Result {
 
+
         var isValid = true
         val finalPath = clusters.map { it.solutionList }.flatten()
         val totalRevenue = finalPath.sumOf { it.revenue }
         val totalCost = finalPath.zipWithNext().sumOf { it.first.distanceTo(it.second) }
 
+        DataCapturing.addClustersInPath(clusters.size, clusterPath.size)
+        DataCapturing.addClustersIncludedCompletely(clusterPath.filter { it.size <= it.solutionList.size - 1 }.size , clusterPath.size)
+        DataCapturing.addPercentageBudgetUnused(totalCost, problemSpace.metaData.costLimit.toDouble())
 
         visualizer.plotGraph(problemSpace.nodeMap, clusters, name, totalRevenue)
         logger.info("------ FINAL RESULTS ------")

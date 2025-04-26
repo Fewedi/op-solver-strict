@@ -1,11 +1,8 @@
-package masterthesis.evaluation
+package masterthesis.evaluation.model
 
-import masterthesis.solver.model.Node
-
-data class Result(
+data class ResultOutput(
     val name: String,
     val size: Int,
-    val finalPath: List<Node>,
     val budget: Int,
     val successful: Boolean,
     val revenue: Int,

@@ -3,7 +3,7 @@ package masterthesis.investigation
 import masterthesis.Solver
 import masterthesis.evaluation.CsvClient
 import masterthesis.solver.Clustering
-import masterthesis.solver.TSPForCluster
+import masterthesis.solver.ClusterPathGenerator
 import masterthesis.config.ClusteringMethod
 import masterthesis.config.ConfigProvider
 import masterthesis.evaluation.Visualizer
@@ -17,7 +17,7 @@ class BudgetComparison {
 
     private val problemParser = ProblemParser()
     private val clustering = Clustering()
-    private val tSPForCluster = TSPForCluster()
+    private val tSPForCluster = ClusterPathGenerator()
     private val solver = Solver()
     private val csvClient = CsvClient()
     private val visualizer = Visualizer()
@@ -31,7 +31,7 @@ class BudgetComparison {
                 null
             }
         }
-        csvClient.writeCsv(results.flatten(), "budget-comparison.csv")
+        csvClient.writeCsv(results.flatten(), "budget-comparison.csv", "results/")
         visualizer.plotClusterMetrics(results.flatten(), "_meanDistToMean", "additionalRevenueToBudget")
         visualizer.plotClusterMetrics(results.flatten(), listOf("_size", "_startToMean", "_endToMean", "_potentialRevenue", "_meanDistToMean", "_meanDetour", "budgetSmall", "budgetBig" ), "additionalRevenueToBudget")
         visualizer.plotClusterMetrics(results.flatten(), listOf("_size", "_startToMean", "_endToMean", "_potentialRevenue", "_meanDistToMean", "_meanDetour", "budgetSmall", "budgetBig" ), "revenueDif")
@@ -43,14 +43,12 @@ class BudgetComparison {
 
         val max = problemSpace.nodeMap.values.map { node -> problemSpace.nodeMap.values.map{ it.distanceTo(node) }}.flatten().max()
 
+        val statistic = ConfigProvider.config.algorithm.clusteringStatistic
         val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
-            ClusteringMethod.KMEANSUPPERBOUND -> { clustering.clusterKmeansUpperBound(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSCAPACITATEDCUSTOM -> { clustering.clusterCapacitatedCustom(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSCAPACITATED -> { clustering.clusterCapacitated(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap) }
-            ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap) }
+            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap,statistic) }
+            ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap,statistic) }
+            ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap,statistic) }
+            ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap,statistic) }
         }
 
         val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)

@@ -214,10 +214,10 @@ class GurobiClient {
         model[GRB.DoubleParam.MIPGap] = 0.05
 
         env.start()
-        val initialSolution = getInitialSolution(nodes, budget.toDouble(), costMatrix, 0, nodes.size - 1)
-        setupModel(nodes, costMatrix, budget.toDouble(), model, initialSolution)
-
-        logger.info("Solving cluster of size ${nodes.size} with budget $budget")
+        val initialSolution = getInitialSolution(nodes, budget, costMatrix, 0, nodes.size - 1)
+        setupModel(nodes, costMatrix, budget, model, initialSolution)
+        val effectiveSize = nodes.size - 1
+        logger.info("Solving cluster of size $effectiveSize with budget $budget")
         model.optimize()
         val gurobiSolution = model.jsonSolution.let {
             logger.debug("Gurobi solution: $it")

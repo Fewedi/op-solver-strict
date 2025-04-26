@@ -3,6 +3,8 @@ activeProfile: gurobiRun
 profiles:
     clusterInvestigation:
         mode: clusterInvestigation
+        analysis:
+            resultPath: "results/clusterflat"
         bothRevenueDistribution: false
         runs: 1
         parameterTuning:
@@ -19,17 +21,19 @@ profiles:
             clusterConnector: op
             clusterElimination: none
             clustering: KMEANSSPLIT
+            clusteringStatistic: MEAN
             budgetDistribution: ELZEINWITHMIN # considerClusterMean, considerClusterMedian, considerClusterMeanAndMedian, considerClusterMeanAndMedianWithOutliers, considerClusterMeanAndMedianWithOutliersAndOutliers, considerClusterMeanAndMedianWithOutliersAndOutliersAndClusterSize
             gurobi:
                 clusterStartNode: mean
         parameter:
-            clusterOpBudget: 0.4
             clusterEliminationThreshold: 0.6
             budgetWeight: 0.2
             clusterSize: 25
 
     gurobiRun:
-        mode: RUN  # Possible values: RUN, PARAMETERSEARCH, CLUSTERINVESTIGATION
+        mode: RUN  # Possible values: RUN, PARAMETERSEARCH, COMPARERESULTS
+        analysis:
+            resultPath: "results/clusterallflat"
         bothRevenueDistribution: false
         runs: 1
         parameterTuning:
@@ -45,12 +49,12 @@ profiles:
             solver: gurobi  # Possible values: gurobi, ea4op
             clusterConnector: op  # Possible values: TSP, OP
             clusterElimination: none  # Possible values: BASE, SPARSITY, LAST, NONE
-            clustering: KMEANSFLOW  # Possible values: KMEANS, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSSPLIT, KMEANSFLOW
-            budgetDistribution: ELZEINWITHMIN  # Possible values: ELZEIN, ELZEINWITHMIN, CONSIDEROUTLIERS, CONSIDERCLUSTERMEAN, NAIVE
+            clustering: KMEANSUPPERBOUNDIGNOREOUTLIERS  # Possible values: KMEANS, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSSPLIT, KMEANSFLOW deprecated: KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND
+            clusteringStatistic: mean # Possible values: MEAN, MEDIAN
+            budgetDistribution: ELZEINWITHMIN # Possible values: ELZEIN, ELZEINWITHMIN, CONSIDEROUTLIERS, CONSIDERCLUSTERMEAN, NAIVE
             gurobi:
                 clusterStartNode: mean  # Possible values: MEAN, MEDIAN, NONE
         parameter:
-            clusterOpBudget: 0.4
-            clusterEliminationThreshold: 0.4
+            clusterEliminationThreshold: 0.5
             budgetWeight: 0.2
             clusterSize: 25

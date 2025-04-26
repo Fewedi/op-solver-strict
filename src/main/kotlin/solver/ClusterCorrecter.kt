@@ -38,7 +38,7 @@ class ClusterCorrecter {
                 nextClusters.add(cluster)
             }
         }
-        require(clusterPath.all { it.nodes.size < maxClusterSize + 1 }) { "Cluster sizes merged with ${clusterPath.map { it.nodes.size }} and ${clusterPath.map { it.budget }}" }
+        require(clusterPath.all { it.nodes.size <= maxClusterSize + 1}) { "maxClusterSize = ${maxClusterSize + 1}: Cluster sizes merged with ${clusterPath.map { it.nodes.size }} and ${clusterPath.map { it.budget }}" }
         return nextClusters.toList()
     }
 

@@ -74,7 +74,7 @@ class BudgetCalculator {
         clusters.forEach { it.budget = budget / clusters.size }
     }
 
-    private fun calculateWeightElzein(clusters: List<Cluster>): List<Double> {
+    fun calculateWeightElzein(clusters: List<Cluster>): List<Double> {
         val delta = clusters.map { cluster ->
             val ui = cluster.nodes.map { it.revenue }.median()
             cluster.nodes.size * ui

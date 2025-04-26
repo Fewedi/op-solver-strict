@@ -3,10 +3,14 @@ package masterthesis.config
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Paths
 
 class ConfigLoader {
+
+    private val logger = LoggerFactory.getLogger(ConfigLoader::class.java)
+
     private val mapper = YAMLMapper.builder()
         .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
         .build()
@@ -21,7 +25,7 @@ class ConfigLoader {
         val profileConfig = rootConfig.profiles[rootConfig.activeProfile]
             ?: throw IllegalArgumentException("Profile '${rootConfig.activeProfile}' not found in configuration.")
 
-        println("Loaded profile: $profileConfig")
+        logger.info("Loaded profile: $profileConfig")
         return profileConfig
     }
 }

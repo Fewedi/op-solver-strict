@@ -1,4 +1,4 @@
-package masterthesis.evaluation
+package masterthesis.evaluation.model
 
 data class AggregatedResult(
     val name: String,

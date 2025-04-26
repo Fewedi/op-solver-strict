@@ -36,7 +36,7 @@ class ClusterEliminator {
     ): List<Cluster> {
         var change = true
         while (change) {
-            val importance = getImportanceMeasure(path, budget, revenueMean)
+            val importance = getImportanceMeasure(path, budget, revenueMean, budgetCalculator)
             val minImportance = importance.minOrNull()!!
             if (pathNeedsCorrection(path, budget, budgetCalculator)
                 || minImportance < ConfigProvider.config.parameter.clusterEliminationThreshold
@@ -64,7 +64,7 @@ class ClusterEliminator {
         var change = true
         val clusterSparsityRelative = getClusterSparsity(path)
         while (change) {
-            val importance = getImportanceMeasure(path, budget, revenueMean, clusterSparsityRelative)
+            val importance = getImportanceMeasure(path, budget, revenueMean, budgetCalculator, clusterSparsityRelative)
             val minImportance = importance.minOrNull()!!
             if (pathNeedsCorrection(path, budget, budgetCalculator)
                 || minImportance < ConfigProvider.config.parameter.clusterEliminationThreshold
@@ -110,14 +110,16 @@ class ClusterEliminator {
         return clusterSparsity.map { clusterSparsityMean / it }
     }
 
-    private fun getImportanceMeasure(path: List<Cluster>, budget: Double, revenueMean: Double, clusterSparsity: List<Double>? = null): List<Double> {
+    private fun getImportanceMeasure(path: List<Cluster>, budget: Double, revenueMean: Double, budgetCalculator: BudgetCalculator, clusterSparsity: List<Double>? = null): List<Double> {
         val budgetPerCluster = budget / path.size
+
+        val elzeinMesure = budgetCalculator.calculateWeightElzein(path).map { it * budget } // up
         return path.mapIndexed { index, cluster ->
             when (cluster) {
                 path.first() -> Double.POSITIVE_INFINITY
                 path.last() -> {
                     val distToPrev = cluster.distanceTo(cluster.prevCluster!!)
-                    val potentialProfit = cluster.nodes.sumOf { it.revenue } // up
+                    val potentialProfit = elzeinMesure[index] // up
                     val sparsity = clusterSparsity?.get(index) ?: 1.0
                     sparsity * potentialProfit * budgetPerCluster / (distToPrev + 1)
                 }

@@ -21,14 +21,13 @@ val gurobiVersion = "12.0.0"
 val kotlinCsvVersion = "1.10.0"
 val ortoolsVersion = "9.12.4544"
 
-
 dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
-
     implementation("org.jetbrains.kotlinx:kandy-lets-plot:$kandyLetsPlotVersion")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
 
     implementation("com.jsoizo:kotlin-csv:$kotlinCsvVersion")
 
@@ -49,10 +48,10 @@ sourceSets {
     }
 }
 
-if (hasProperty("buildScan")) {
-    extensions.findByName("buildScan")?.withGroovyBuilder {
-        setProperty("termsOfServiceUrl", "https://gradle.com/terms-of-service")
-        setProperty("termsOfServiceAgree", "yes")
+develocity {
+    buildScan {
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfUseAgree = "yes"
     }
 }
 

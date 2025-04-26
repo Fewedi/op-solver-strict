@@ -7,6 +7,7 @@ data class RootConfig (
 
 data class ProfileConfig (
     val mode: Mode,
+    val analysis: Analysis,
     val bothRevenueDistribution: Boolean,
     val runs: Int,
     val parameterTuning: ParameterTuning?,
@@ -15,8 +16,11 @@ data class ProfileConfig (
     val parameter: Parameter,
 )
 
+data class Analysis (
+    val resultPath: String,
+)
+
 data class Parameter (
-    val clusterOpBudget: Double,
     val clusterEliminationThreshold: Double,
     val budgetWeight: Double,
     val clusterSize: Int
@@ -27,6 +31,7 @@ data class Algorithm (
     val ea4op: Ea4opConfig?,
     val gurobi: GurobiConfig?,
     val clustering: ClusteringMethod,
+    val clusteringStatistic: AggregationMethod,
     val budgetDistribution: BudgetDistributionMethod,
     val clusterConnector: ClusterConnector,
     val clusterElimination: ClusterEliminationMethod
@@ -48,12 +53,12 @@ data class ParameterTuning (
 data class Ea4opConfig (
     val startEntries: Int,
     val dummyStartNode: DummyStartNode,
-    val dummyStartNodeMethod: AgregationMethod,
+    val dummyStartNodeMethod: AggregationMethod,
     val dummyStartNodeFactor: Double,
 )
 
 data class GurobiConfig (
-    val clusterStartNode: AgregationMethod
+    val clusterStartNode: AggregationMethod
 )
 
 enum class ClusterConnector {
@@ -71,7 +76,8 @@ enum class ClusterEliminationMethod {
 enum class Mode {
     RUN,
     PARAMETERSEARCH,
-    CLUSTERINVESTIGATION
+    CLUSTERINVESTIGATION,
+    COMPARERESULTS,
 }
 
 enum class TestSet {
@@ -97,21 +103,18 @@ enum class DummyStartNode {
     NONE
 }
 
-enum class AgregationMethod {
+enum class AggregationMethod {
     MEAN,
-    MEDIAN,
-    NONE
+    MEDIAN
 }
 
 enum class ClusteringMethod {
     KMEANS,
-    KMEANSANDCORRECTLATER,
-    KMEANSUPPERBOUND,
     KMEANSUPPERBOUNDIGNOREOUTLIERS,
-    KMEANSCAPACITATED,
-    KMEANSCAPACITATEDCUSTOM,
     KMEANSSPLIT,
-    KMEANSFLOW
+    KMEANSFLOW,
+    //deprecated
+    KMEANSANDCORRECTLATER
 }
 
 enum class RevenueDistributionType {
