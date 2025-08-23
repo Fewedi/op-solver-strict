@@ -62,7 +62,7 @@ class ClusteringDepr {
                         .filterIndexed { index, _ -> clusterLists[index].size < max }
                         .minByOrNull { distToClusters[centroids.indexOf(it)] }
                     val bestDistToCluster = distToClusters[centroids.indexOf(closestCentroidOfNode)]
-                    Triple(centroids.indexOf(closestCentroidOfNode), bestDistToCluster / node.revenue, node)
+                    Triple(centroids.indexOf(closestCentroidOfNode), bestDistToCluster / node.revenue!!, node)
                 }.groupBy { triple -> triple.first }
                     .map { clusterCandidates -> clusterCandidates.value.sortedBy { triple -> triple.second } }
                     .let { clusters ->
@@ -119,7 +119,7 @@ class ClusteringDepr {
                         .filterIndexed { index, _ -> clusterLists[index].size <= max }
                         .minByOrNull { distToClusters[centroids.indexOf(it)] }
                     val bestDistToCluster = distToClusters[centroids.indexOf(closestCentroidOfNode)]
-                    Triple(centroids.indexOf(closestCentroidOfNode), bestDistToCluster / node.revenue, node)
+                    Triple(centroids.indexOf(closestCentroidOfNode), bestDistToCluster / node.revenue!!, node)
                 }
 
                 tmep.filter { it.first == centroids.indexOf(closestCentroid) }

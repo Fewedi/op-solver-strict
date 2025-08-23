@@ -12,15 +12,20 @@ class ClusterPathGenerator {
 
     private val logger = LoggerFactory.getLogger(ClusterPathGenerator::class.java)
 
-    fun provideClusterPathOp(clusters: Map<Int, List<Node>>, budget: Double, objectMapper: ObjectMapper, gurobiClient: GurobiClient, problemParser: ProblemParser): List<Cluster> {
-        val clusterList = clusters.map { nodeListEntry ->
+    fun provideClusterPathOp(clusters: Map<Int, List<Node>>, budget: Double, objectMapper: ObjectMapper, gurobiClient: GurobiClient, problemParser: ProblemParser, convexHullGrahamScan: ConvexHullGrahamScan): List<Cluster> {
+        val clusterList = clusters.map { clusterEntry ->
+            val convexHull = convexHullGrahamScan.scan(clusterEntry.value)
+            val convexSize = if (convexHull.isEmpty()) 0.0 else convexHullGrahamScan.polygonArea(convexHull)
             Cluster(
-                id = nodeListEntry.key,
-                x = nodeListEntry.value.map { node -> node.x }.average(),
-                y = nodeListEntry.value.map { node -> node.y }.average(),
-                nodes = nodeListEntry.value.toMutableList(),
-                size = nodeListEntry.value.size,
-                isStart = nodeListEntry.value.any { node -> node.startNode },
+                id = clusterEntry.key,
+                x = clusterEntry.value.map { node -> node.x }.average(),
+                y = clusterEntry.value.map { node -> node.y }.average(),
+                nodes = clusterEntry.value.toMutableList(),
+                size = clusterEntry.value.size,
+                isStart = clusterEntry.value.any { node -> node.startNode },
+                convexHull = convexHull,
+                convexSize = convexSize,
+                revenue = clusterEntry.value.sumOf { if(it.revenue!! < 0) 0 else it.revenue!! }
             )
         }.sortedBy { it.id }
 
@@ -30,7 +35,7 @@ class ClusterPathGenerator {
         val endNode = Node(-1, -1.0, -1.0, 0)
         val newBudget = budget * ConfigProvider.config.parameter.clusterEliminationThreshold
         val pseudoNodes = preparedList.map { cluster ->
-            val revenue = cluster.nodes.sumOf { it.revenue }
+            val revenue = cluster.nodes.sumOf { it.revenue!! }
             Node(cluster.id, cluster.x, cluster.y, revenue)
         }.toMutableList().apply {
             add( endNode)
@@ -49,19 +54,24 @@ class ClusterPathGenerator {
             finalPath
         }else {
             logger.info("Gurobi cluster solution included all clusters, OP seems not necessary, using concorde to solve TSP")
-            provideClusterPathConcorde(clusters)
+            provideClusterPathConcorde(clusters, convexHullGrahamScan)
         }
     }
 
-    fun provideClusterPathConcorde(clusters: Map<Int, List<Node>>): List<Cluster> {
-        val clusterList = clusters.map {
+    fun provideClusterPathConcorde(clusters: Map<Int, List<Node>>, convexHullGrahamScan: ConvexHullGrahamScan): List<Cluster> {
+        val clusterList = clusters.map { clusterEntry ->
+            val convexHull = convexHullGrahamScan.scan(clusterEntry.value)
+            val convexSize = if (convexHull.isEmpty()) 0.0 else convexHullGrahamScan.polygonArea(convexHull)
             Cluster(
-                id = it.key,
-                x = it.value.map { it.x }.average(),
-                y = it.value.map { it.y }.average(),
-                nodes = it.value.toMutableList(),
-                size = it.value.size,
-                isStart = it.value.any { it.startNode },
+                id = clusterEntry.key,
+                x = clusterEntry.value.map { it.x }.average(),
+                y = clusterEntry.value.map { it.y }.average(),
+                nodes = clusterEntry.value.toMutableList(),
+                size = clusterEntry.value.size,
+                isStart = clusterEntry.value.any { it.startNode },
+                convexHull = convexHull,
+                convexSize = convexSize,
+                revenue = clusterEntry.value.sumOf { if(it.revenue!! < 0) 0 else it.revenue!! }
             )
         }
         val startCluster = clusterList.find { it.isStart } ?: clusterList.first()

@@ -1,6 +1,7 @@
 package masterthesis.evaluation
 
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
+import masterthesis.config.ConfigProvider
 import masterthesis.evaluation.model.ParameterSearchResult
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -78,9 +79,12 @@ class CsvClient {
             return
         }
 
+        val folder = ConfigProvider.config.analysis.resultPath
+        ensureFolderExists(folder)
+
         val headers = listOf("name", "best") + valueList.map { BigDecimal(it).setScale(2, RoundingMode.HALF_UP).toString()}
 
-        csvWriter().open(fileName) {
+        csvWriter().open("$folder/$fileName") {
             writeRow(headers)
             data.forEach { item ->
                 val best = item.values.max().let {

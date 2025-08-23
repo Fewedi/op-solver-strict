@@ -27,7 +27,7 @@ class GurobiClient {
             scores[i] = if (i in solution || i == endNodeIndex) {
                 Double.NEGATIVE_INFINITY
             } else {
-                costM[newestNodeIndex][i] * nodes[i].revenue - costM[i][endNodeIndex] * meanRevenue
+                costM[newestNodeIndex][i] * nodes[i].revenue!! - costM[i][endNodeIndex] * meanRevenue
             }
         }
         return scores.withIndex()
@@ -46,7 +46,7 @@ class GurobiClient {
         val solution: MutableList<Int> = mutableListOf() // Start with task 0
         var t = 0.0
 
-        val meanRevenue = nodes.map { it.revenue }.average()
+        val meanRevenue = nodes.map { it.revenue!! }.average()
         var toAdd = startNodeIndex
         while ((
                     solution.size <= 1 ||
@@ -90,7 +90,7 @@ class GurobiClient {
         val obj = GRBLinExpr().apply {
             for (i in 0 until nodes.size) {
                 for (j in 0 until nodes.size) {
-                    addTerm(nodes[j].revenue.toDouble(), x[i][j])
+                    addTerm(nodes[j].revenue!!.toDouble(), x[i][j])
                 }
             }
         }

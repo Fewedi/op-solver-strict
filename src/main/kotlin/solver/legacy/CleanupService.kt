@@ -1,5 +1,6 @@
 package masterthesis.solver.legacy
 
+import masterthesis.DataCapturing
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -9,11 +10,13 @@ class CleanupService {
         cleanupFilesWithExtension("./src/main/resources", ".oplib")
         cleanupFilesWithExtension("./", "TSP_problem")
         cleanupFilesWithExtension("./", "TSP_problem.sol")
+        DataCapturing.cleanup()
     }
 
     fun finalCleanUp() {
         cleanUp()
         cleanupFoldersInFolder("./lets-plot-images")
+        DataCapturing.finalCleanup()
     }
 
     private fun cleanupFoldersInFolder(directoryPath: String) {

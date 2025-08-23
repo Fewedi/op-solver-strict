@@ -1,7 +1,7 @@
 package solver
 
 import masterthesis.config.ConfigProvider
-import masterthesis.config.RevenueDistributionType
+import masterthesis.config.Origin
 import masterthesis.solver.legacy.GkobeagaSolution
 import masterthesis.solver.model.GurobiSolution
 import masterthesis.solver.model.Node
@@ -17,16 +17,24 @@ class ProblemParser {
     private val logger = LoggerFactory.getLogger(ProblemParser::class.java)
 
     fun readProblemSpace(folderName: String, gen: String): ProblemSpace {
-        val path = "src/main/resources/op-solver/build/OPLib/instances/$gen/$folderName.oplib"
+        val path = when (ConfigProvider.config.instance.origin) {
+            Origin.OPLIB -> "src/main/resources/op-solver/build/OPLib/instances/$gen/$folderName.oplib"
+            Origin.REF -> {
+                if (gen == "gen1") {
+                    "src/main/resources/OP_instances_elzein/OP_FlatUtilities/$folderName"
+                } else if (gen == "gen2") {
+                    "src/main/resources/OP_instances_elzein/OP_RandomUtilities/$folderName"
+                } else {
+                    logger.error("Unknown generation: $gen")
+                    throw IllegalArgumentException("Unknown generation: $gen")
+                }
+            }
+        }
+
         val file = File(path).readLines()
         val problem = ProblemMetaData(path)
 
         val nodeMap = HashMap<Int, Node>()
-
-        val getRevenue = when (ConfigProvider.config.instance.revenueDistribution) {
-            RevenueDistributionType.RANDOM -> ::getRevenueRandom
-            RevenueDistributionType.FLAT-> ::getRevenueFlat
-        }
 
         var mode = ReadingMode.META
 
@@ -34,10 +42,14 @@ class ProblemParser {
         file.forEach { line ->
             when (line.trim()) {
                 "NODE_COORD_SECTION" -> mode = ReadingMode.NODES
+                "NODE_COORDINATES" -> mode = ReadingMode.NODES //ref
                 "DEPOT_SECTION" -> mode = ReadingMode.DEPOT
                 "NODE_SCORE_SECTION" -> {
                     mode = ReadingMode.SCORES
                     logger.warn("Scores are not read")
+                }
+                "NODE_SCORES" -> {
+                    mode = ReadingMode.SCORES //ref
                 }
 
                 else -> when (mode) {
@@ -60,7 +72,6 @@ class ProblemParser {
                                 id = id,
                                 x = entry[1].toDouble(),
                                 y = entry[2].toDouble(),
-                                revenue = getRevenue(),
                                 startNode = id == 0)
                             nodeMap[id] = node
                         } else {
@@ -68,7 +79,15 @@ class ProblemParser {
                         }
                     }
 
-                    ReadingMode.SCORES -> Unit
+                    ReadingMode.SCORES -> {
+                        val entry = line.split(" ")
+                        if (entry.size == 2) {
+                            val id = entry[0].toInt() - 1
+                            nodeMap[id]?.let {
+                                it.revenue = entry[1].toInt()
+                            } ?: run {logger.error("Node with id $id not found in map while reading scores") }
+                        }
+                    }
                     ReadingMode.DEPOT -> {
                         if (!readStartNode) {
                             val entry = line.split(" ")
@@ -77,7 +96,10 @@ class ProblemParser {
                                 nodeMap[id]?.let {
                                     it.startNode = true
                                     readStartNode = true
-                                    problem.startNode = entry[0]
+                                    problem.startNode = nodeMap[entry[0].toInt()] ?: run {
+                                        logger.error("Start node with id ${entry[0]} not found in map while reading depot")
+                                        throw IllegalArgumentException("Start node with id ${entry[0]} not found in map while reading depot")
+                                    }
                                 }
                             }
                         }
@@ -86,16 +108,21 @@ class ProblemParser {
                 }
             }
         }
+        if (!readStartNode) {
+            nodeMap[0]?.let {
+                it.startNode = true
+                problem.startNode = it
+            } ?: run {
+                logger.error("No start node found in problem space.")
+                throw IllegalArgumentException("No start node found in problem space.")
+            }
+        }
         val distanceMatrix = createDistanceMatrix(nodeMap)
-
+        if (nodeMap.values.any { it.revenue == null || it.revenue!! < 0}) {
+            logger.error("Some nodes have no revenue or negative revenue. This is not allowed.")
+            throw IllegalArgumentException("Some nodes have no revenue or negative revenue. This is not allowed.")
+        }
         return ProblemSpace(problem, nodeMap, distanceMatrix)
-    }
-
-    private fun getRevenueRandom(): Int {
-        return (1..100).random()
-    }
-    private fun getRevenueFlat(): Int {
-        return 1
     }
 
     private fun createDistanceMatrix(nodeMap: Map<Int, Node>): Array<DoubleArray> {
@@ -124,7 +151,8 @@ class ProblemParser {
             "COMMENT" -> metaData.comment = entry[1]
             "TYPE" -> metaData.type = entry[1]
             "DIMENSION" -> metaData.dimension = entry[1]
-            "COST_LIMIT" -> metaData.costLimit = entry[1].trim()
+            "COST_LIMIT" -> metaData.costLimit = entry[1].trim().toInt().toDouble()
+            "BUDGET" -> metaData.costLimit = entry[1].trim().toDouble()
             "EDGE_WEIGHT_TYPE" -> metaData.edgeWeightType = entry[1]
             else -> logger.error("Unknown node entry: ${entry.first()} in file")
         }

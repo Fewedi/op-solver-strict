@@ -7,6 +7,7 @@ import masterthesis.solver.ClusterPathGenerator
 import masterthesis.config.ClusteringMethod
 import masterthesis.config.ConfigProvider
 import masterthesis.evaluation.Visualizer
+import masterthesis.solver.ConvexHullGrahamScan
 import masterthesis.solver.StartNodeProvider
 import masterthesis.solver.model.Cluster
 import solver.ProblemParser
@@ -22,6 +23,7 @@ class BudgetComparison {
     private val csvClient = CsvClient()
     private val visualizer = Visualizer()
     private val startNodeProvider = StartNodeProvider()
+    private val convexHullGrahamScan = ConvexHullGrahamScan()
 
     fun prepareMultipleRuns(folderName: List<String>, gen: String) {
         val results = folderName.mapNotNull {
@@ -51,7 +53,7 @@ class BudgetComparison {
             ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap,statistic) }
         }
 
-        val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap)
+        val clusterPath = tSPForCluster.provideClusterPathConcorde(clusterMap, convexHullGrahamScan)
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(clusterPath, startNodeProvider)
 
         val bigBudgets = clusterPath.map { it.startNodes.first().distanceTo(it.endNodes.first()) * 3 }
@@ -59,11 +61,11 @@ class BudgetComparison {
 
         val bigResults = clusterPath.mapIndexed { index, cluster ->
             solver.solveWithGurobi(cluster, bigBudgets[index])
-            cluster.solutionList.sumOf { it.revenue }
+            cluster.solutionList.sumOf { it.revenue!! }
         }
         val smallResults = clusterPath.mapIndexed { index, cluster ->
             solver.solveWithGurobi(cluster, smallBudgets[index])
-            cluster.solutionList.sumOf { it.revenue }
+            cluster.solutionList.sumOf { it.revenue!! }
         }
 
         val clusterMetrics = clusterPath.mapIndexed { index, cluster ->
@@ -113,7 +115,7 @@ class BudgetComparison {
             BigDecimal.valueOf(cluster.nodes.map {
                 it.distanceTo(cluster.startNodes.first(), max) + it.distanceTo(cluster.endNodes.first(), max) - cluster.startNodes.first()
                     .distanceTo(cluster.endNodes.first(), max)
-            }.sum() / cluster.solutionList.sumOf { it.revenue }).setScale(4, RoundingMode.HALF_UP)
+            }.sum() / cluster.solutionList.sumOf { it.revenue!! }).setScale(4, RoundingMode.HALF_UP)
         } else {
             BigDecimal.ZERO
         }
@@ -130,14 +132,14 @@ class BudgetComparison {
             _startToEnd = startToEnd,
             _meanDistToMean = BigDecimal.valueOf(cluster.nodes.map { it.distanceTo(cluster, max) }.average()).setScale(4, RoundingMode.HALF_UP),
             _meanDetour = meanDetour,
-            _potentialRevenue = cluster.nodes.sumOf { it.revenue },
+            _potentialRevenue = cluster.nodes.sumOf { it.revenue!! },
 
             budgetSmall = budgetSmall,
             budgetBig = budgetBig,
             revenueSmall = revenueSmall,
             revenueBig = revenueBig,
-            revenueSum = cluster.nodes.sumOf { it.revenue },
-            revenueMean = BigDecimal.valueOf(cluster.nodes.map { it.revenue }.average()).setScale(4, RoundingMode.HALF_UP),
+            revenueSum = cluster.nodes.sumOf { it.revenue!!},
+            revenueMean = BigDecimal.valueOf(cluster.nodes.map { it.revenue!! }.average()).setScale(4, RoundingMode.HALF_UP),
             revenueDif = revenueBig - revenueSmall,
             additionalRevenueToBudget = BigDecimal(revenueBig - revenueSmall).setScale(4, RoundingMode.HALF_UP).div(BigDecimal(budgetBig - budgetSmall).setScale(4, RoundingMode.HALF_UP)),
             meanDetourRelativeToRevenue = meanDetourRelativeToRevenue,

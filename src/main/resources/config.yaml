@@ -2,23 +2,25 @@ activeProfile: gurobiRun
 
 profiles:
     clusterInvestigation:
-        mode: clusterInvestigation
+        mode: PARAMETERSEARCH
         analysis:
             resultPath: "results/clusterflat"
         bothRevenueDistribution: false
         runs: 1
         parameterTuning:
-            parameter: clusterOpBudget
+            parameter: clusterEliminationThreshold
             startValue: 0.30
             endValue: 0.90
             stepSize: 0.1
         instance:
+            origin: ref
             testSet: base
             budgetFactor: 1.0
             revenueDistribution: random
         algorithm:
             solver: gurobi
             clusterConnector: op
+            tspCostMatrix: makeSymmetric  # Possible values: makeSymmetric, nothing
             clusterElimination: none
             clustering: KMEANSSPLIT
             clusteringStatistic: MEAN
@@ -27,34 +29,40 @@ profiles:
                 clusterStartNode: mean
         parameter:
             clusterEliminationThreshold: 0.6
+            clusterEliminationRevenueWeight: 0.5
+            clusterEliminationSparsityWeight: 0.5
             budgetWeight: 0.2
             clusterSize: 25
 
     gurobiRun:
         mode: RUN  # Possible values: RUN, PARAMETERSEARCH, COMPARERESULTS
         analysis:
-            resultPath: "results/clusterallflat"
+            resultPath: "results/elimination"
         bothRevenueDistribution: false
-        runs: 1
+        runs: 5
         parameterTuning:
-            parameter: clusterOpBudget
-            startValue: 0.30
-            endValue: 0.90
+            parameter: clusterEliminationThreshold
+            startValue: 0.3
+            endValue: 0.7
             stepSize: 0.1
         instance:
-            testSet: one  # Possible values: ONE, HARD, BASE, ALL, TRAIN
-            budgetFactor: 1.00
+            origin: ref # Possible values: REF, OPLIB
+            testSet: base  # Possible values: ONE, HARD, BASE, ALL, TRAIN
+            budgetFactor: 0.3
             revenueDistribution: random  # Possible values: RANDOM, FLAT
         algorithm:
             solver: gurobi  # Possible values: gurobi, ea4op
-            clusterConnector: op  # Possible values: TSP, OP
-            clusterElimination: none  # Possible values: BASE, SPARSITY, LAST, NONE
-            clustering: KMEANSUPPERBOUNDIGNOREOUTLIERS  # Possible values: KMEANS, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSSPLIT, KMEANSFLOW deprecated: KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND
+            clusterConnector: TSP  # Possible values: TSP, OP
+            tspCostMatrix: makeSymmetric  # Possible values: makeSymmetric, nothing
+            clusterElimination: DISTANCE  # Possible values: LAST, DISTANCE, SPARSITY, NONE
+            clustering: KMEANSFLOW  # Possible values: KMEANS, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSSPLIT, KMEANSFLOW deprecated: KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND
             clusteringStatistic: mean # Possible values: MEAN, MEDIAN
             budgetDistribution: ELZEINWITHMIN # Possible values: ELZEIN, ELZEINWITHMIN, CONSIDEROUTLIERS, CONSIDERCLUSTERMEAN, NAIVE
             gurobi:
                 clusterStartNode: mean  # Possible values: MEAN, MEDIAN, NONE
         parameter:
             clusterEliminationThreshold: 0.5
+            clusterEliminationRevenueWeight: 0.25
+            clusterEliminationSparsityWeight: 0.5
             budgetWeight: 0.2
             clusterSize: 25

@@ -165,7 +165,7 @@ class Clustering {
             }
         }
         DataCapturing.addNodesInDeadCluster(deadCluster.size.toDouble()/nodes.size.toDouble())
-        DataCapturing.addRevenueInDeadCluster(deadCluster.sumOf { it.revenue }.toDouble() / nodes.sumOf { it.revenue }.toDouble())
+        DataCapturing.addRevenueInDeadCluster(deadCluster.sumOf { it.revenue!! }.toDouble() / nodes.sumOf { it.revenue!! }.toDouble())
         logger.info("Clustering did not consider ${deadCluster.size} of ${nodes.size} nodes")
 
         return resultList.mapIndexed { index, finalNodes ->

@@ -27,12 +27,22 @@ class MetaHandler {
     private val budgetComparison = BudgetComparison()
     private val resultMerger = ResultMerger()
 
+    private var maxRun = -1
+    private var currentRun = 1
 
     fun runAll() {
         cleanupService.finalCleanUp()
-        val gen = "gen3"
-        val folderName = "OPLib/instances/$gen" // The folder in your resources
-        val fileNames = getTestSet(folderName, gen)
+        val gen = when (ConfigProvider.config.instance.revenueDistribution) {
+            RevenueDistributionType.FLAT -> "gen1"
+            RevenueDistributionType.RANDOM -> "gen2"
+        }
+        val fileNames = when (ConfigProvider.config.instance.origin) {
+            Origin.OPLIB -> {
+                val folderName = "OPLib/instances/$gen" // The folder in your resources
+                getTestSetOplib(folderName, gen)
+            }
+            Origin.REF -> getTestSetRef()
+        }
 
         if (ConfigProvider.config.bothRevenueDistribution) {
             setNewConfig(RevenueDistributionType.FLAT)
@@ -44,24 +54,42 @@ class MetaHandler {
         }
     }
 
+    private fun getParameterList(): List<Double> {
+        val valueList: MutableList<Double> = mutableListOf()
+        var value = ConfigProvider.config.parameterTuning!!.startValue
+        while (value <= ConfigProvider.config.parameterTuning!!.endValue) {
+            valueList.add(value)
+            value += ConfigProvider.config.parameterTuning!!.stepSize
+        }
+        return valueList
+    }
+
+    private fun calculateRunAmount(fileNames: List<String>): Int {
+        var maxRun = fileNames.size * ConfigProvider.config.runs
+        if (ConfigProvider.config.mode == Mode.PARAMETERSEARCH) {
+            val valueList = getParameterList()
+            maxRun *= valueList.size
+        }
+        logger.info("Max runs: $maxRun")
+        return maxRun
+    }
+
     private fun manageRun(fileNames: List<String>, gen: String) {
 
+        maxRun = calculateRunAmount(fileNames)
         when (ConfigProvider.config.mode) {
             Mode.RUN -> {
                 val experimentString = getExperimentString()
                 logger.info("----- Running experiment: $experimentString -----")
                 val results = runTestCases(fileNames, solver, gen, experimentString)
-                csvClient.writeCsv(results, experimentString.toFileNameString(), "results/")
+                csvClient.writeCsv(results, "${experimentString.toFileNameString()}.csv", "results/")
             }
             Mode.PARAMETERSEARCH -> {
-                val valueList: MutableList<Double> = mutableListOf()
-                var value = ConfigProvider.config.parameterTuning!!.startValue
-                while (value <= ConfigProvider.config.parameterTuning!!.endValue) {
-                    valueList.add(value)
-                    value += ConfigProvider.config.parameterTuning!!.stepSize
-                }
+                val valueList = getParameterList()
+                val experimentString = getExperimentString().toFileNameString(ExperimentSpecification.Parameter.fromString("clusterEliminationThreshold"))
+                val paramString = getParamString()
                 val results = runParameterSearch(valueList, fileNames, solver, gen)
-                csvClient.writeCsvParamBased(results, getResultName("parameters"), valueList)
+                csvClient.writeCsvParamBased(results, "param_${experimentString}_${paramString}.csv", valueList)
             }
             Mode.CLUSTERINVESTIGATION -> {
                 budgetComparison.prepareMultipleRuns(fileNames, gen)
@@ -70,6 +98,13 @@ class MetaHandler {
                 resultMerger.mergeResults(csvClient)
             }
         }
+    }
+
+    private fun getParamString(): String {
+        val start = ConfigProvider.config.parameterTuning?.startValue ?: 0.0
+        val end = ConfigProvider.config.parameterTuning?.endValue ?: 0.0
+        val step = ConfigProvider.config.parameterTuning?.stepSize ?: 0.0
+        return "${ConfigProvider.config.parameterTuning?.parameter?.lowercase()}_${start}_${end}_${step}"
     }
 
     private fun getResultName(prefix: String): String {
@@ -85,6 +120,7 @@ class MetaHandler {
         val op = (ConfigProvider.config.parameter.clusterEliminationThreshold * 100).toInt().toString()
         val budget = (ConfigProvider.config.instance.budgetFactor * 100).toInt().toString()
         return "${prefix}_${flatness}_${budgetDistribution}_${paramName}_${op}_${budget}.csv"
+
     }
 
     private fun runParameterSearch(
@@ -119,50 +155,91 @@ class MetaHandler {
             val results = mutableListOf<Result>()
             for (i in 1..ConfigProvider.config.runs) {
                 try {
+                    currentRun++
+                    logger.info("----------------------------------------------")
+                    logger.info("--------------- RUN $currentRun OF $maxRun ---------------")
+                    logger.info("----------------------------------------------")
                     results.add(solver.solve(fileName, gen))
                 } catch (e: Exception) {
                     logger.error("Failed to solve $fileName", e)
                     results.add(Result(fileName, 0, emptyList(), 0, false, 0, 0.0, 0.0))
                 }
             }
-            if (ConfigProvider.config.runs == 1) {
-                mapResult(results.first())
-            } else {
-                aggregateResults(results)
-            }
+
             logger.info("Mean cluster size: ${DataCapturing.clusterSizes.average()}")
             logger.info("Mean nodes in dead cluster to all nodes: ${DataCapturing.nodesInDeadCluster.average()}")
             logger.info("Mean revenue in dead cluster to overall revenue: ${DataCapturing.revenueInDeadCluster.average()}")
 
             csvClient.writeLineToCsv(experimentSpecification.getExperimentResultsInstance(), fileName)
+            DataCapturing.cleanup()
+
+            if (ConfigProvider.config.runs == 1) {
+                mapResult(results.first())
+            } else {
+                aggregateResults(results)
+            }
         }
         csvClient.writeLineToCsv(experimentSpecification.getExperimentResultsGlobal(), "global")
+        DataCapturing.finalCleanup()
         return results
     }
 
     private fun setNewConfig(newValue: Any) {
-        val oldParamConfig = ConfigProvider.config
+        val oldParamConfigParameter = ConfigProvider.config.parameter
 
-        val constructor = oldParamConfig::class.primaryConstructor ?: throw IllegalArgumentException("No primary constructor found")
+        val constructor = oldParamConfigParameter::class.primaryConstructor ?: throw IllegalArgumentException("No primary constructor found")
 
         val params = constructor.parameters.associateWith { param ->
-            if (param.name == ConfigProvider.config.parameterTuning!!.parameter) newValue else oldParamConfig.parameter::class.memberProperties
-                .first { it.name == param.name }
-                .apply { isAccessible = true }
-                .getter.call(oldParamConfig.parameter)
+            if (param.name == ConfigProvider.config.parameterTuning!!.parameter) {
+                newValue
+            } else {
+                oldParamConfigParameter::class.memberProperties
+                    .first { it.name == param.name }
+                    .apply { isAccessible = true }
+                    .getter.call(oldParamConfigParameter)
+            }
         }
 
-        val newConfig = constructor.callBy(params)
-
+        val newParameter = constructor.callBy(params)
+        val newConfig = ConfigProvider.config.copy(
+            parameter = newParameter
+        )
         ConfigProvider.setConfig(newConfig)
     }
 
-    private fun getTestSet(folderName: String, gen: String): List<String> {
+    private fun getTestSetRef(): List<String> {
+
+        val baseList = listOf(
+            "eil101",
+            "gil262",
+            "pr299",
+            "lin318",
+            "rd400",
+            "d493",
+            "u574",
+            "u724",
+            "pcb1173",
+            "fl1400",
+            "pr2392"
+        )
+
+        return baseList.filter {
+            when (ConfigProvider.config.instance.testSet) {
+                TestSet.ONE -> listOf("eil101")
+                TestSet.HARD -> listOf("fl1400","lin318")
+                TestSet.BASE -> baseList
+                TestSet.TRAIN -> baseList - baseList.toSet() // dont
+                TestSet.ALL -> baseList
+            }.contains(it)
+        }
+    }
+    private fun getTestSetOplib(folderName: String, gen: String): List<String> {
 
         val classLoader = Thread.currentThread().contextClassLoader
         val fileNames = classLoader.getResource(folderName)?.let { folder ->
             File(folder.toURI()).listFiles()?.map { it.name.split(".")[0] } ?: emptyList()
         } ?: throw IllegalArgumentException("Folder '$folderName' not found!")
+
 
         val baseList = listOf(
             "eil101-$gen-50",
@@ -232,7 +309,7 @@ class MetaHandler {
         val set = ConfigProvider.config.instance.testSet.name.lowercase()
         val mode = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val runs = ConfigProvider.config.runs
-        val budgetFactor = BigDecimal.valueOf(ConfigProvider.config.instance.budgetFactor).setScale(2)
+        val budgetFactor = BigDecimal.valueOf(ConfigProvider.config.instance.budgetFactor).setScale(2, RoundingMode.HALF_UP)
         val k = ConfigProvider.config.parameter.clusterSize
         val clustering = ConfigProvider.config.algorithm.clustering.let {
             when (it) {
@@ -253,15 +330,17 @@ class MetaHandler {
                 ClusterConnector.OP -> "op"
                 ClusterConnector.TSP -> {
                     when (it.algorithm.clusterElimination) {
-                        ClusterEliminationMethod.LAST -> "tsprfb"
-                        ClusterEliminationMethod.BASE -> "tsprce"
-                        ClusterEliminationMethod.SPARSITY -> "tsprcs"
+                        ClusterEliminationMethod.LASTDEPR, ClusterEliminationMethod.LAST -> "tsprfb"
+                        ClusterEliminationMethod.BASEDEPR, ClusterEliminationMethod.DISTANCE -> "tsprce"
+                        ClusterEliminationMethod.SPARSITYDEPR, ClusterEliminationMethod.SPARSITY -> "tsprcs"
                         ClusterEliminationMethod.NONE -> "tspn-deprec"
                     }
                 }
             }
         }
-        val r = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationThreshold).setScale(2)
+        val revenueWeight = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationRevenueWeight).setScale(2, RoundingMode.HALF_UP)
+        val sparsityWeight = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationSparsityWeight).setScale(2, RoundingMode.HALF_UP)
+        val r = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationThreshold).setScale(2, RoundingMode.HALF_UP)
         val budgetDist = ConfigProvider.config.algorithm.budgetDistribution.let {
             when (it) {
                 BudgetDistributionMethod.CONSIDEROUTLIERS -> "mldc"
@@ -280,7 +359,9 @@ class MetaHandler {
             clustering = clustering,
             elimination = elimination,
             r = r,
-            budgetDist = budgetDist
+            budgetDist = budgetDist,
+            eliminationRevenueWeight = revenueWeight,
+            eliminationSparsityWeight = sparsityWeight
         )
     }
 }

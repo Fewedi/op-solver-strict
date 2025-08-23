@@ -39,6 +39,7 @@ class Solver {
     private val clusterCorrecter = ClusterCorrecter()
     private val clusterEliminator = ClusterEliminator()
     private val startNodeProvider = StartNodeProvider()
+    private val convexHullGrahamScan = ConvexHullGrahamScan()
 
     fun solve(folderName: String, gen: String): Result {
 
@@ -48,7 +49,7 @@ class Solver {
         val problemSpace = problemParser.readProblemSpace(folderName, gen)
         val clusterSize = ConfigProvider.config.parameter.clusterSize - 1
 
-        val budget = problemSpace.metaData.costLimit.toDouble() * ConfigProvider.config.instance.budgetFactor
+        val budget = problemSpace.metaData.costLimit * ConfigProvider.config.instance.budgetFactor
         logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.algorithm.clustering}")
         val statistic = ConfigProvider.config.algorithm.clusteringStatistic
         val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
@@ -63,8 +64,8 @@ class Solver {
 
         logger.info("solving cluster path with ${clusterMap.size} clusters")
         val originalClusterPath = when (ConfigProvider.config.algorithm.clusterConnector) {
-            ClusterConnector.TSP -> { tSPForCluster.provideClusterPathConcorde(clusterMap) }
-            ClusterConnector.OP -> { tSPForCluster.provideClusterPathOp(clusterMap, budget, objectMapper, gurobiOpSolverClient, problemParser) }
+            ClusterConnector.TSP -> { tSPForCluster.provideClusterPathConcorde(clusterMap, convexHullGrahamScan) }
+            ClusterConnector.OP -> { tSPForCluster.provideClusterPathOp(clusterMap, budget, objectMapper, gurobiOpSolverClient, problemParser, convexHullGrahamScan) }
         }
         logger.info("solving cluster path done")
 
@@ -76,14 +77,19 @@ class Solver {
 
         tSPForCluster.setDistancesToNextClusterAndProvideStartNodes(correctedClusterPath, startNodeProvider)
 
-        val revenueMean = problemSpace.nodeMap.values.map { it.revenue }.average()
+        val revenueMean = problemSpace.nodeMap.values.map { it.revenue!! }.average()
 
         val clusterPath = when (ConfigProvider.config.algorithm.clusterElimination) {
-            ClusterEliminationMethod.BASE -> { clusterEliminator.eliminateUnnecessaryClusters(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
-            ClusterEliminationMethod.SPARSITY -> { clusterEliminator.eliminateUnnecessaryClustersConsiderSparsity(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
-            ClusterEliminationMethod.LAST -> { clusterEliminator.eliminateClustersFromBack(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.BASEDEPR -> { clusterEliminator.eliminateUnnecessaryClusters(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.SPARSITYDEPR -> { clusterEliminator.eliminateUnnecessaryClustersConsiderSparsity(correctedClusterPath.toMutableList(), budget, revenueMean, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.LASTDEPR -> { clusterEliminator.eliminateClustersFromBack(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider) }
+            ClusterEliminationMethod.LAST -> { clusterEliminator.eliminateClusters(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider, clusterEliminator::removeLastCluster)}
+            ClusterEliminationMethod.DISTANCE -> { clusterEliminator.eliminateClusters(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider, clusterEliminator::removeClusterByConnectionEffort)}
+            ClusterEliminationMethod.SPARSITY -> { clusterEliminator.eliminateClusters(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider, clusterEliminator::removeClusterBySparsity)}
             ClusterEliminationMethod.NONE -> { correctedClusterPath }
         }
+        DataCapturing.addClusterFractionData(correctedClusterPath.size, clusterPath.size,
+            correctedClusterPath.sumOf { it.revenue }, clusterPath.sumOf { it.revenue })
         logger.info("cluster elimination removed ${correctedClusterPath.size - clusterPath.size} clusters")
 
         when (ConfigProvider.config.algorithm.budgetDistribution) {

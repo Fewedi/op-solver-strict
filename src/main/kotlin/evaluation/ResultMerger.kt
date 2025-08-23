@@ -9,7 +9,6 @@ import java.io.File
 
 class ResultMerger {
 
-
     private fun getFilesOfFolder(): List<File> {
         val currentDir = System.getProperty("user.dir")
         val folder = File(currentDir, ConfigProvider.config.analysis.resultPath)

@@ -15,6 +15,9 @@ data class Cluster(
     val startNodes: MutableList<Node> = mutableListOf(),
     val endNodes: MutableList<Node> = mutableListOf(),
     var budget: Double = -1.0,
+    val convexHull: List<Node>,
+    val convexSize: Double,
+    val revenue: Int,
 ) {
     lateinit var solutionList: List<Node>
 

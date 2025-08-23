@@ -22,6 +22,8 @@ data class Analysis (
 
 data class Parameter (
     val clusterEliminationThreshold: Double,
+    val clusterEliminationRevenueWeight: Double,
+    val clusterEliminationSparsityWeight: Double,
     val budgetWeight: Double,
     val clusterSize: Int
 )
@@ -34,10 +36,12 @@ data class Algorithm (
     val clusteringStatistic: AggregationMethod,
     val budgetDistribution: BudgetDistributionMethod,
     val clusterConnector: ClusterConnector,
+    val tspCostMatrix: Symmetric,
     val clusterElimination: ClusterEliminationMethod
 )
 
 data class Instance (
+    val origin: Origin,
     val testSet: TestSet,
     val budgetFactor: Double,
     val revenueDistribution: RevenueDistributionType,
@@ -67,10 +71,18 @@ enum class ClusterConnector {
 }
 
 enum class ClusterEliminationMethod {
-    BASE,
-    SPARSITY,
+    BASEDEPR,
+    SPARSITYDEPR,
+    LASTDEPR,
     LAST,
+    DISTANCE,
+    SPARSITY,
     NONE
+}
+
+enum class Symmetric {
+    MAKESYMMETRIC,  // Possible values: makeSymmetric, nothing
+    NOTHING
 }
 
 enum class Mode {
@@ -115,6 +127,11 @@ enum class ClusteringMethod {
     KMEANSFLOW,
     //deprecated
     KMEANSANDCORRECTLATER
+}
+
+enum class Origin{
+    REF,
+    OPLIB
 }
 
 enum class RevenueDistributionType {

@@ -212,11 +212,14 @@ class Visualizer {
                     axis.breaksLabeled(emptyList<Double>(),listOf())
                 }
                 color(cluster) {
-                    legend.type = LegendType.DiscreteLegend(nRow = 13, nCol = clusters.size.div(13) + 1)
+                    legend.type = LegendType.None
+                    //legend.type = LegendType.DiscreteLegend(nRow = 13, nCol = clusters.size.div(13) + 1)
                     scale = categorical()
                 }
                 size = 2.0
                 alpha(revenue) {
+
+                    legend.type = LegendType.None
                     scale = continuous(range = (0.1..1.0))
                 }
             }
