@@ -88,22 +88,27 @@ class Solver {
             ClusterEliminationMethod.SPARSITY -> { clusterEliminator.eliminateClusters(correctedClusterPath.toMutableList(), budget, budgetCalculator, startNodeProvider, clusterEliminator::removeClusterBySparsity)}
             ClusterEliminationMethod.NONE -> { correctedClusterPath }
         }
-        DataCapturing.addClusterFractionData(correctedClusterPath.size, clusterPath.size,
-            correctedClusterPath.sumOf { it.revenue }, clusterPath.sumOf { it.revenue })
+        DataCapturing.addClusterFractionData(correctedClusterPath.size, clusterPath.size
+            , correctedClusterPath.sumOf { it.revenue }, clusterPath.sumOf { it.revenue })
         logger.info("cluster elimination removed ${correctedClusterPath.size - clusterPath.size} clusters")
 
-        when (ConfigProvider.config.algorithm.budgetDistribution) {
-            BudgetDistributionMethod.ELZEIN -> { budgetCalculator.calculateBudgetElzein(
-                clusterPath,
-                budget
-            ) }
-            BudgetDistributionMethod.ELZEINWITHMIN -> { budgetCalculator.calculateBudgetElzeinWithMin(clusterPath, budget) }
-            BudgetDistributionMethod.CONSIDEROUTLIERS -> { budgetCalculator.calculateBudgetConsiderDetours(clusterPath, budget,
-                ConfigProvider.config.parameter.budgetWeight) }
-            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> { budgetCalculator.calculateBudgetConsiderClusterMean(clusterPath, budget,
-                ConfigProvider.config.parameter.budgetWeight) }
-            BudgetDistributionMethod.NAIVE -> { budgetCalculator.calculateBudgetNaive(clusterPath, budget) }
-        }
+        budgetCalculator.calculateBudget(
+            clusterPath,
+            budget,
+            when (ConfigProvider.config.algorithm.budgetDistribution) {
+                BudgetDistributionMethod.ELZEIN -> { budgetCalculator::calculateWeightElzein }
+                BudgetDistributionMethod.CONSIDERSPARSENESS -> { budgetCalculator::calculateWeightSparseness }
+                BudgetDistributionMethod.CONSIDERDETOUR -> { budgetCalculator::calculateWeightDetourEasy }
+                BudgetDistributionMethod.NAIVE -> { budgetCalculator::calculateWeightNaive }
+            },
+            when (ConfigProvider.config.algorithm.budgetMinCalculation) {
+                BudgetMinCalculationMethod.MIN -> { budgetCalculator::getMinDistances }
+                BudgetMinCalculationMethod.CENTER -> { budgetCalculator::getMinDistancesToClusterMean }
+                BudgetMinCalculationMethod.NONE -> { _ : Cluster -> 0.0 }
+            },
+            ConfigProvider.config.algorithm.useMaxBudget
+        )
+
 
         logger.info("solving clusters with ${ConfigProvider.config.algorithm.solver}")
         try {

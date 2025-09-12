@@ -28,7 +28,7 @@ class MetaHandler {
     private val resultMerger = ResultMerger()
 
     private var maxRun = -1
-    private var currentRun = 1
+    private var currentRun = 0
 
     fun runAll() {
         cleanupService.finalCleanUp()
@@ -86,7 +86,8 @@ class MetaHandler {
             }
             Mode.PARAMETERSEARCH -> {
                 val valueList = getParameterList()
-                val experimentString = getExperimentString().toFileNameString(ExperimentSpecification.Parameter.fromString("clusterEliminationThreshold"))
+                val experimentString = getExperimentString().toFileNameString(
+                    ExperimentSpecification.Parameter.fromString(ConfigProvider.config.parameterTuning!!.parameter))
                 val paramString = getParamString()
                 val results = runParameterSearch(valueList, fileNames, solver, gen)
                 csvClient.writeCsvParamBased(results, "param_${experimentString}_${paramString}.csv", valueList)
@@ -108,13 +109,18 @@ class MetaHandler {
     }
 
     private fun getResultName(prefix: String): String {
-        val budgetDistribution = when(ConfigProvider.config.algorithm.budgetDistribution) {
-            BudgetDistributionMethod.CONSIDEROUTLIERS -> "co"
-            BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> "cm"
-            BudgetDistributionMethod.ELZEIN -> "e"
-            BudgetDistributionMethod.ELZEINWITHMIN -> "em"
-            BudgetDistributionMethod.NAIVE -> "n"
-        }
+        val budgetDistribution = ConfigProvider.config.algorithm.budgetDistribution.let {
+            when (it) {
+                BudgetDistributionMethod.CONSIDERDETOUR -> "cd"
+                BudgetDistributionMethod.CONSIDERSPARSENESS -> "cs"
+                BudgetDistributionMethod.ELZEIN -> "el"
+                BudgetDistributionMethod.NAIVE -> "eq"
+            }
+        } + when (ConfigProvider.config.algorithm.budgetMinCalculation) {
+            BudgetMinCalculationMethod.NONE -> ""
+            BudgetMinCalculationMethod.MIN -> "ml"
+            BudgetMinCalculationMethod.CENTER -> "c"
+        } + if (ConfigProvider.config.algorithm.useMaxBudget) "mx" else ""
         val flatness = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val paramName = ConfigProvider.config.parameterTuning?.parameter?.lowercase() ?: "none"
         val op = (ConfigProvider.config.parameter.clusterEliminationThreshold * 100).toInt().toString()
@@ -226,7 +232,7 @@ class MetaHandler {
         return baseList.filter {
             when (ConfigProvider.config.instance.testSet) {
                 TestSet.ONE -> listOf("eil101")
-                TestSet.HARD -> listOf("fl1400","lin318")
+                TestSet.HARD -> listOf("fl1400")
                 TestSet.BASE -> baseList
                 TestSet.TRAIN -> baseList - baseList.toSet() // dont
                 TestSet.ALL -> baseList
@@ -343,13 +349,16 @@ class MetaHandler {
         val r = BigDecimal.valueOf(ConfigProvider.config.parameter.clusterEliminationThreshold).setScale(2, RoundingMode.HALF_UP)
         val budgetDist = ConfigProvider.config.algorithm.budgetDistribution.let {
             when (it) {
-                BudgetDistributionMethod.CONSIDEROUTLIERS -> "mldc"
-                BudgetDistributionMethod.CONSIDERCLUSTERMEAN -> "mlsc"
-                BudgetDistributionMethod.ELZEIN -> "ea4op"
-                BudgetDistributionMethod.ELZEINWITHMIN -> "ea4opml"
+                BudgetDistributionMethod.CONSIDERDETOUR -> "cd"
+                BudgetDistributionMethod.CONSIDERSPARSENESS -> "cs"
+                BudgetDistributionMethod.ELZEIN -> "el"
                 BudgetDistributionMethod.NAIVE -> "eq"
             }
-        }
+        } + when (ConfigProvider.config.algorithm.budgetMinCalculation) {
+            BudgetMinCalculationMethod.NONE -> ""
+            BudgetMinCalculationMethod.MIN -> "ml"
+            BudgetMinCalculationMethod.CENTER -> "c"
+        } + if (ConfigProvider.config.algorithm.useMaxBudget) "mx" else ""
         return ExperimentSpecification(
             set = set,
             mode = mode,

@@ -24,6 +24,7 @@ data class Parameter (
     val clusterEliminationThreshold: Double,
     val clusterEliminationRevenueWeight: Double,
     val clusterEliminationSparsityWeight: Double,
+    val maxBudgetFactor: Double,
     val budgetWeight: Double,
     val clusterSize: Int
 )
@@ -35,6 +36,8 @@ data class Algorithm (
     val clustering: ClusteringMethod,
     val clusteringStatistic: AggregationMethod,
     val budgetDistribution: BudgetDistributionMethod,
+    val budgetMinCalculation: BudgetMinCalculationMethod,
+    val useMaxBudget: Boolean,
     val clusterConnector: ClusterConnector,
     val tspCostMatrix: Symmetric,
     val clusterElimination: ClusterEliminationMethod
@@ -141,8 +144,13 @@ enum class RevenueDistributionType {
 
 enum class BudgetDistributionMethod {
     ELZEIN,
-    ELZEINWITHMIN,
-    CONSIDEROUTLIERS,
-    CONSIDERCLUSTERMEAN,
+    CONSIDERDETOUR,
+    CONSIDERSPARSENESS,
     NAIVE
+}
+
+enum class BudgetMinCalculationMethod {
+    MIN,
+    CENTER,
+    NONE
 }

@@ -255,6 +255,9 @@ class Visualizer {
                     "budgetFactor" -> "$name/$shortName-$totalRevenue-${config.instance.budgetFactor}.$fileType"
                     "clusterEliminationThreshold" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationThreshold}.$fileType"
                     "budgetWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.budgetWeight}.$fileType"
+                    "maxBudgetFactor" -> "$name/$shortName-$totalRevenue-${config.parameter.maxBudgetFactor}.$fileType"
+                    "clusterEliminationRevenueWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationRevenueWeight}.$fileType"
+                    "clusterEliminationSparsityWeight" -> "$name/$shortName-$totalRevenue-${config.parameter.clusterEliminationSparsityWeight}.$fileType"
                     else -> "$name/$shortName-$totalRevenue.$fileType"
                 }
             }

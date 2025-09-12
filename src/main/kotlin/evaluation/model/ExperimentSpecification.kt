@@ -46,7 +46,7 @@ data class ExperimentSpecification(
                 }
             }
             Parameter.CLUSTER_ELIMINATION_SPARSITY_THRESHOLD -> "results_${set}_${mode}_${runs}_${budgetFactor.int()}_${k}_${clustering}_${elimination}_${r.int()}_${eliminationRevenueWeight.int()}_PARAM_${budgetDist}"
-            Parameter.NONE -> "results_${set}_${mode}_${runs}_${budgetFactor.int()}_${k}_${clustering}_${elimination}_${r.int()}_${budgetDist}"
+            Parameter.NONE, Parameter.BUDGET_WEIGHT, Parameter.MAX_BUDGET_FACTOR -> "results_${set}_${mode}_${runs}_${budgetFactor.int()}_${k}_${clustering}_${elimination}_${r.int()}_${budgetDist}"
         }
     }
 
@@ -56,6 +56,8 @@ data class ExperimentSpecification(
         CLUSTER_ELIMINATION_FACTOR ("clusterEliminationThreshold"),
         CLUSTER_ELIMINATION_REVENUE_THRESHOLD("clusterEliminationRevenueWeight"),
         CLUSTER_ELIMINATION_SPARSITY_THRESHOLD("clusterEliminationSparsityWeight"),
+        MAX_BUDGET_FACTOR("maxBudgetFactor"),
+        BUDGET_WEIGHT("budgetWeight"),
         NONE ("");
 
         companion object {

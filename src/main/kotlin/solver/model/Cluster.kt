@@ -17,6 +17,7 @@ data class Cluster(
     var budget: Double = -1.0,
     val convexHull: List<Node>,
     val convexSize: Double,
+    val maxBudget: Double,
     val revenue: Int,
 ) {
     lateinit var solutionList: List<Node>

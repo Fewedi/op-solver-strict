@@ -206,7 +206,7 @@ class GurobiClient {
         }
 
         require(costMatrix.size == nodes.size) { "Cost matrix size does not match node size" }
-        if (!isLastCluster) require(costMatrix[0][costMatrix.size - 1] < budget) { "Budget is too low for the given cost matrix with ${costMatrix[0][costMatrix.size - 1]} to $budget " }
+        if (!isLastCluster) require(costMatrix[0][costMatrix.size - 1] <= budget) { "Budget is too low for the given cost matrix with ${costMatrix[0][costMatrix.size - 1]} to $budget " }
 
         env[GRB.IntParam.OutputFlag] = 0
         val model = GRBModel(env)

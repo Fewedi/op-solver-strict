@@ -7,6 +7,7 @@ import masterthesis.solver.model.Cluster
 import masterthesis.solver.model.Node
 import org.slf4j.LoggerFactory
 import solver.ProblemParser
+import kotlin.math.sqrt
 
 class ClusterPathGenerator {
 
@@ -25,6 +26,7 @@ class ClusterPathGenerator {
                 isStart = clusterEntry.value.any { node -> node.startNode },
                 convexHull = convexHull,
                 convexSize = convexSize,
+                maxBudget = ConfigProvider.config.parameter.maxBudgetFactor * sqrt( clusterEntry.value.size * convexSize),
                 revenue = clusterEntry.value.sumOf { if(it.revenue!! < 0) 0 else it.revenue!! }
             )
         }.sortedBy { it.id }
@@ -71,6 +73,7 @@ class ClusterPathGenerator {
                 isStart = clusterEntry.value.any { it.startNode },
                 convexHull = convexHull,
                 convexSize = convexSize,
+                maxBudget = ConfigProvider.config.parameter.maxBudgetFactor * sqrt( clusterEntry.value.size * convexSize),
                 revenue = clusterEntry.value.sumOf { if(it.revenue!! < 0) 0 else it.revenue!! }
             )
         }
