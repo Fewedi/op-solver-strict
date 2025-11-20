@@ -112,12 +112,10 @@ class Clustering {
         }
     }
 
-    // Function to calculate the Euclidean distance between two points
     private fun euclideanDistance(point1: DoubleArray, point2: DoubleArray): Double {
         return sqrt(point1.zip(point2) { a, b -> (a - b).pow(2) }.sum())
     }
 
-    // Function to calculate Euclidean distances between all points in X and C
     private fun euclideanDistances(
         x: Array<DoubleArray>,
         c: Array<DoubleArray>,
@@ -154,6 +152,45 @@ class Clustering {
                 } else {
                     deadCluster.add(node)
                 }
+            }
+
+            val newCentroids = updateCentroids(resultList, statistic)
+
+            if (newCentroids.all { it in centroids }) {
+                break
+            } else {
+                centroids = newCentroids
+            }
+        }
+        DataCapturing.addNodesInDeadCluster(deadCluster.size.toDouble()/nodes.size.toDouble())
+        DataCapturing.addRevenueInDeadCluster(deadCluster.sumOf { it.revenue!! }.toDouble() / nodes.sumOf { it.revenue!! }.toDouble())
+        logger.info("Clustering did not consider ${deadCluster.size} of ${nodes.size} nodes")
+
+        return resultList.mapIndexed { index, finalNodes ->
+            finalNodes.forEach() { it.cluster = index }
+            index to finalNodes
+        }.toMap()
+    }
+
+    fun clusterKmeansUpperBoundIncludeOutliers(
+        nodeMap: Map<Int, Node>,
+        statistic: AggregationMethod
+    ): Map<Int, List<Node>> {
+        val nodes = nodeMap.values.toList().sortedByDescending { if (it.startNode) Int.MAX_VALUE else it.revenue }
+        val max = ConfigProvider.config.parameter.clusterSize
+        val k = ceil(nodes.size.toDouble() / max.toDouble()).toInt()
+        var centroids = nodes.shuffled().take(k).map { TempNode(it.x, it.y) }
+        val resultList = List(k) { mutableListOf<Node>() }
+        val deadCluster = mutableListOf<Node>()
+
+        for (i in 0 until 100) {
+            deadCluster.clear()
+            resultList.map { it.clear() }
+            nodes.forEach { node ->
+                val closestCentroid = centroids.filter {
+                    resultList[centroids.indexOf(it)].size < max
+                }.minBy { it.distanceTo(node) }
+                resultList[centroids.indexOf(closestCentroid)].add(node)
             }
 
             val newCentroids = updateCentroids(resultList, statistic)

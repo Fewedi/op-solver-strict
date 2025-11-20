@@ -53,7 +53,7 @@ class Solver {
         logger.info("clustering ${problemSpace.nodeMap.size} nodes with method: ${ConfigProvider.config.algorithm.clustering}")
         val statistic = ConfigProvider.config.algorithm.clusteringStatistic
         val clusterMap = when (ConfigProvider.config.algorithm.clustering) {
-            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIgnoreOutliers(problemSpace.nodeMap, statistic) }
+            ClusteringMethod.KMEANSUPPERBOUNDIGNOREOUTLIERS -> { clustering.clusterKmeansUpperBoundIncludeOutliers(problemSpace.nodeMap, statistic) }
             ClusteringMethod.KMEANS, ClusteringMethod.KMEANSANDCORRECTLATER -> { clustering.clusterKmeans(problemSpace.nodeMap, statistic) }
             ClusteringMethod.KMEANSSPLIT -> { clustering.clusterKmeansWithSplitting(problemSpace.nodeMap, statistic) }
             ClusteringMethod.KMEANSFLOW -> { clustering.clusterKmeansFlow(problemSpace.nodeMap, statistic) }

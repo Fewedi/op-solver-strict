@@ -210,7 +210,7 @@ class GurobiClient {
 
         env[GRB.IntParam.OutputFlag] = 0
         val model = GRBModel(env)
-        model[GRB.DoubleParam.TimeLimit] = 60.0
+        model[GRB.DoubleParam.TimeLimit] = 40.0
         model[GRB.DoubleParam.MIPGap] = 0.05
 
         env.start()

@@ -216,7 +216,7 @@ class Visualizer {
                     //legend.type = LegendType.DiscreteLegend(nRow = 13, nCol = clusters.size.div(13) + 1)
                     scale = categorical()
                 }
-                size = 2.0
+                size = 3.0
                 alpha(revenue) {
 
                     legend.type = LegendType.None

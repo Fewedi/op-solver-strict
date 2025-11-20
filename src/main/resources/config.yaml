@@ -42,33 +42,33 @@ profiles:
         analysis:
             resultPath: "results/budget/comparison"
         bothRevenueDistribution: false
-        runs: 5
+        runs: 10
         parameterTuning:
             parameter: budgetWeight
-            startValue: 1.0
-            endValue: 7.0
-            stepSize: 1.0
+            startValue: 0.2
+            endValue: 0.8
+            stepSize: 0.2
         instance:
             origin: ref # Possible values: REF, OPLIB
-            testSet: base  # Possible values: ONE, HARD, BASE
+            testSet: ONE  # Possible values: ONE, HARD, BASE
             budgetFactor: 1.0
-            revenueDistribution: flat  # Possible values: RANDOM, FLAT
+            revenueDistribution: random  # Possible values: RANDOM, FLAT
         algorithm:
             solver: gurobi  # Possible values: gurobi, ea4op
             clusterConnector: OP  # Possible values: TSP, OP
             tspCostMatrix: makeSymmetric  # Possible values: makeSymmetric, nothing
             clusterElimination: none  # Possible values: LAST, DISTANCE, SPARSITY, NONE
-            clustering: KMEANSFLOW  # Possible values: KMEANS, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSSPLIT, KMEANSFLOW deprecated: KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND
+            clustering: KMEANSUPPERBOUNDIGNOREOUTLIERS  # Possible values: KMEANS, KMEANSUPPERBOUNDIGNOREOUTLIERS, KMEANSSPLIT, KMEANSFLOW deprecated: KMEANSCAPACITATED, KMEANSCAPACITATEDCUSTOM, KMEANSANDCORRECTLATER, KMEANSUPPERBOUND
             clusteringStatistic: MEDIAN # Possible values: MEAN, MEDIAN
             budgetDistribution: ELZEIN # Possible values: ELZEIN, CONSIDERSPARSENESS, CONSIDERDETOUR, NAIVE
-            budgetMinCalculation: min # Possible values: MIN, CENTER, NONE
-            useMaxBudget: true
+            budgetMinCalculation: center # Possible values: MIN, CENTER, NONE
+            useMaxBudget: false
             gurobi:
                 clusterStartNode: mean  # Possible values: MEAN, MEDIAN, NONE
         parameter:
             clusterEliminationThreshold: 0.5
             clusterEliminationRevenueWeight: 0.25
             clusterEliminationSparsityWeight: 0.5
-            maxBudgetFactor: 1.5
-            budgetWeight: 5.0
+            maxBudgetFactor: 0.6
+            budgetWeight: 0.6
             clusterSize: 25
