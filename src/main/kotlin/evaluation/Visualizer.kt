@@ -181,7 +181,7 @@ class Visualizer {
         File("lets-plot-images/$name").mkdirs()
         val shortName = name.split("-").first().trim()
         plot {
-            // Plot the first dataset (clusterDataSet)
+
             points {
                 x(startPosX) {
                     axis.breaksLabeled(emptyList<Double>(),listOf())
@@ -204,7 +204,6 @@ class Visualizer {
                 size = 3.0
             }
 
-            // Plot the second dataset (dataset)
             points {
                 x(xs) {
                     axis.breaksLabeled(emptyList<Double>(),listOf())}
@@ -213,7 +212,7 @@ class Visualizer {
                 }
                 color(cluster) {
                     legend.type = LegendType.None
-                    //legend.type = LegendType.DiscreteLegend(nRow = 13, nCol = clusters.size.div(13) + 1)
+
                     scale = categorical()
                 }
                 size = 3.0
@@ -224,7 +223,6 @@ class Visualizer {
                 }
             }
 
-            // Add the lines (paths) for the second dataset
             paths.forEach {
                 line {
                     x(it.toList().map { it.x })

@@ -71,7 +71,6 @@ class Solver {
 
         val correctedClusterPath = when (ConfigProvider.config.algorithm.clustering) {
             ClusteringMethod.KMEANSANDCORRECTLATER -> { clusterCorrecter.correctClusterSizes(originalClusterPath, clusterSize) }
-            //ClusteringMethod.KMEANSSPLIT -> { clusterCorrecter.mergeSmallClusters(originalClusterPath, clusterSize) }
             else -> { originalClusterPath }
         }
 

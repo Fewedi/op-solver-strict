@@ -5,17 +5,15 @@ import java.util.Stack
 
 
 object GraphUtils {
-    // Cross product for orientation (ccw)
     fun ccw(a: Node, b: Node, c: Node): Int {
         val area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
         return when {
-            area > 0 -> 1    // Counter-clockwise
-            area < 0 -> -1   // Clockwise
-            else -> 0        // Collinear
+            area > 0 -> 1
+            area < 0 -> -1
+            else -> 0
         }
     }
 
-    // Get the lowest (y), leftmost (x) node
     fun getMinY(nodes: List<Node>): Node {
         return nodes.minWith(compareBy({ it.y }, { it.x }))
     }

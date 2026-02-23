@@ -38,7 +38,7 @@ class MetaHandler {
         }
         val fileNames = when (ConfigProvider.config.instance.origin) {
             Origin.OPLIB -> {
-                val folderName = "OPLib/instances/$gen" // The folder in your resources
+                val folderName = "OPLib/instances/$gen"
                 getTestSetOplib(folderName, gen)
             }
             Origin.REF -> getTestSetRef()
@@ -165,6 +165,8 @@ class MetaHandler {
                     logger.info("----------------------------------------------")
                     logger.info("--------------- RUN $currentRun OF $maxRun ---------------")
                     logger.info("----------------------------------------------")
+                    val r = Runtime.getRuntime()
+                    logger.info("heap: max=${r.maxMemory() / 1024 / 1024}MB, allocated=${r.totalMemory() / 1024 / 1024}MB, free=${r.freeMemory() / 1024 / 1024}MB")
                     results.add(solver.solve(fileName, gen))
                 } catch (e: Exception) {
                     logger.error("Failed to solve $fileName", e)
@@ -311,7 +313,6 @@ class MetaHandler {
     }
 
     private fun getExperimentString(): ExperimentSpecification{
-        //E = (set,mode,runs,budgetfactor,k,clustering,elimination,R',budgetdist)
         val set = ConfigProvider.config.instance.testSet.name.lowercase()
         val mode = ConfigProvider.config.instance.revenueDistribution.name.lowercase()
         val runs = ConfigProvider.config.runs

@@ -7,6 +7,7 @@ group = "masterthesis"
 version = "1.0-SNAPSHOT"
 
 application {
+    applicationDefaultJvmArgs = listOf("-Xms2G", "-Xmx16G")
     mainClass.set("masterthesis.MainKt")
 }
 

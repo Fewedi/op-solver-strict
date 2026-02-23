@@ -10,7 +10,6 @@ class CleanupService {
         cleanupFilesWithExtension("./src/main/resources", ".oplib")
         cleanupFilesWithExtension("./", "TSP_problem")
         cleanupFilesWithExtension("./", "TSP_problem.sol")
-        DataCapturing.cleanup()
     }
 
     fun finalCleanUp() {

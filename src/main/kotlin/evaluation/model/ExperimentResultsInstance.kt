@@ -14,6 +14,8 @@ data class ExperimentResultsInstance(
     val eliminationRevenueWeight: BigDecimal,
     val eliminationSparsityWeight: BigDecimal,
     val budgetDist: String,
+    val budgetWeight: BigDecimal,
+    val maxBudgetFactor: BigDecimal,
     val avgClusterSize: BigDecimal,
     val avgNodesInDeadCluster: BigDecimal,
     val avgRevenueInDeadCluster: BigDecimal,
@@ -24,6 +26,11 @@ data class ExperimentResultsInstance(
     val avgClustersExcluded: BigDecimal,
     val avgPercentageClusterExcluded: BigDecimal,
     val avgPercentageClusterRevenueExcluded: BigDecimal,
+    val avgBudgetDistDefaulted: BigDecimal,
+    val avgBudgetSpilloverBudgetFirstIterationInstance: BigDecimal,
+    val avgBudgetSpilloversFirstIterationInstance: BigDecimal,
+    val avgBudgetSpilloversInstance: BigDecimal,
+    val avgBudgetSpilloverIterationsInstance: BigDecimal,
 ){
     override fun toString(): String {
         return "E = ($set,$mode,$runs,$budgetFactor,$k,$clustering,$elimination,$r,$budgetDist)"

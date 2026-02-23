@@ -1,7 +1,7 @@
 package masterthesis.config
 
 data class RootConfig (
-    val activeProfile: Profile, // To store the active profile name
+    val activeProfile: Profile,
     val profiles: Map<Profile, ProfileConfig>
 )
 
@@ -84,7 +84,7 @@ enum class ClusterEliminationMethod {
 }
 
 enum class Symmetric {
-    MAKESYMMETRIC,  // Possible values: makeSymmetric, nothing
+    MAKESYMMETRIC,
     NOTHING
 }
 

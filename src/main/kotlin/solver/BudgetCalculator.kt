@@ -1,5 +1,6 @@
 package masterthesis.solver
 
+import masterthesis.DataCapturing
 import masterthesis.config.ConfigProvider
 import masterthesis.solver.model.Cluster
 import org.jetbrains.kotlinx.dataframe.math.median
@@ -74,10 +75,12 @@ class BudgetCalculator {
         var leftOverBudget = budget - minDistances.sum()
 
         if (useMaxValue) {
-            // initialize with minimum budgets
+
             clusters.forEachIndexed { index, cluster -> cluster.budget = minDistances[index] }
 
-            var nonFullClusters: List<Cluster> = clusters
+            var nonFullClusters: List<Cluster>
+            var additionalIterations = 0
+            var spilloversHappened = 0
             do {
                 nonFullClusters = clusters.filter { it.budget < it.maxBudget }
                 if (nonFullClusters.isEmpty()) break
@@ -91,12 +94,20 @@ class BudgetCalculator {
 
                 nonFullClusters = clusters.filter { it.budget < it.maxBudget }
                 leftOverBudget = budget - clusters.sumOf { it.budget }
+                spilloversHappened = clusters.size - nonFullClusters.size
+                if (additionalIterations == 0) {
+                    DataCapturing.addAmountClusterBudgetSpillOverFirstIteration(clusters.size, budget, leftOverBudget, spilloversHappened)
+                }
+                additionalIterations++
 
             } while (leftOverBudget > 5 && nonFullClusters.isNotEmpty())
+
+            DataCapturing.addOverallAmountClusterBudgetSpillOver(clusters.size, spilloversHappened, additionalIterations)
 
             if (nonFullClusters.isEmpty() && leftOverBudget > 0) {
                 val add = leftOverBudget / clusters.size.toDouble()
                 clusters.forEach { it.budget += add }
+                DataCapturing.budgetDistDefaulted()
                 logger.warn("All clusters are full but there is still budget left over, distributing evenly")
             }
 
@@ -125,9 +136,8 @@ class BudgetCalculator {
 
     fun calculateWeightSparseness(clusters: List<Cluster>): List<Double> {
         val elzein = calculateWeightElzein(clusters)
-        val sparsness = clusters.map { cluster -> sqrt( cluster.convexSize.toDouble() + 1) }
+        val sparsness = clusters.map { cluster -> sqrt( cluster.convexSize + 1) }
 
-        logger.info("Elzein = ${elzein.map { String.format("%.4f", it) }}")
         val minElzein = elzein.minOrNull()!!
         val maxElzein = elzein.maxOrNull()!!
         val minSparsness = sparsness.minOrNull()!!

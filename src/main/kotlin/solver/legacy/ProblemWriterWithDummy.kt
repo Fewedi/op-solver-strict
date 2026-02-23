@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory
 
 class ProblemWriterWithDummy: ProblemWriter {
 
-    private val logger = LoggerFactory.getLogger(ProblemWriterWithDummy::class.java)
-
     override fun writeCluster(
         metadata: ProblemMetaData,
         distanceMatrix: Array<DoubleArray>,

@@ -62,10 +62,6 @@ class ConcordeClient {
                 D_symm[i][j] = INT_MAX
             }
         }
-        //for (i in n until 2 * n) {
-        //    D_symm[i][0] = 0.0
-        //    D_symm[0][i] = 0.0
-        //}
         for (i in 0 until n) {
             D_symm[i][n] = 0.0
             D_symm[n][i] = 0.0
@@ -128,8 +124,6 @@ class ConcordeClient {
         //5
         //0 4 3 2 1 6 11 10 9 8
         //12 7 5
-        //logger.info("Cost matrix: ${costM.map { row -> row.joinToString(" || ") }}")
-        //logger.info("fileContent: $fileContent")
 
         return if (ConfigProvider.config.algorithm.tspCostMatrix == Symmetric.MAKESYMMETRIC) {
             val clusterPath = fileContent

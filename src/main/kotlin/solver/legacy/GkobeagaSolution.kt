@@ -15,23 +15,23 @@ data class GkobeagaSolution(
 ) {
     data class Param(
         val timeLimit: Long,
-        val init: Int? = null,        // Nullable for SolutionEvolution
-        val select: Int? = null,      // Nullable for SolutionEvolution
-        val pinit: Int? = null,       // Nullable for SolutionEvolution
-        val itLim: Int? = null,       // Nullable for SolutionInit
-        val popSize: Int? = null,     // Nullable for SolutionInit
-        val popStop: Int? = null,     // Nullable for SolutionInit
-        val d2d: Int? = null,         // Nullable for SolutionInit
-        val nparsel: Int? = null,     // Nullable for SolutionInit
-        val pmut: Double? = null,     // Nullable for SolutionInit
-        val lenImprove1: Int? = null, // Nullable for SolutionInit
-        val lenImprove2: Int? = null  // Nullable for SolutionInit
+        val init: Int? = null,
+        val select: Int? = null,
+        val pinit: Int? = null,
+        val itLim: Int? = null,
+        val popSize: Int? = null,
+        val popStop: Int? = null,
+        val d2d: Int? = null,
+        val nparsel: Int? = null,
+        val pmut: Double? = null,
+        val lenImprove1: Int? = null,
+        val lenImprove2: Int? = null
     )
 
     data class Stats(
         val time: Int,
-        val it: Int? = null,                   // Nullable for SolutionInit
-        val timeInfeasRecover: Int? = null     // Nullable for SolutionInit
+        val it: Int? = null,
+        val timeInfeasRecover: Int? = null
     )
 
     data class Prob(

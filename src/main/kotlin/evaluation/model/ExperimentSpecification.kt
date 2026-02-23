@@ -80,6 +80,8 @@ data class ExperimentSpecification(
             eliminationRevenueWeight = eliminationRevenueWeight,
             eliminationSparsityWeight = eliminationSparsityWeight,
             budgetDist = budgetDist,
+            budgetWeight = ConfigProvider.config.parameter.budgetWeight.getResultBigDecimal(),
+            maxBudgetFactor = ConfigProvider.config.parameter.maxBudgetFactor.getResultBigDecimal(),
             avgClusterSize = DataCapturing.clusterSizesInstance.averageToPrint(),
             avgNodesInDeadCluster = DataCapturing.nodesInDeadClusterInstance.averageToPrint(),
             avgRevenueInDeadCluster = DataCapturing.revenueInDeadClusterInstance.averageToPrint(),
@@ -89,7 +91,12 @@ data class ExperimentSpecification(
             avgPercentageBudgetUnused = DataCapturing.percentageBudgetUnusedInstance.averageToPrint(),
             avgClustersExcluded = DataCapturing.clustersExcludedInstance.averageToPrint(),
             avgPercentageClusterExcluded = DataCapturing.fractionClustersExcludedInstance.averageToPrint(),
-            avgPercentageClusterRevenueExcluded = DataCapturing.fractionClusterRevenueExcludedInstance.averageToPrint()
+            avgPercentageClusterRevenueExcluded = DataCapturing.fractionClusterRevenueExcludedInstance.averageToPrint(),
+            avgBudgetDistDefaulted = (DataCapturing.defaultToEqualBudgetInstance.toDouble() / runs.toDouble()).getResultBigDecimal(),
+            avgBudgetSpilloverBudgetFirstIterationInstance = DataCapturing.budgetSpilloverBudgetFirstIterationInstance.averageToPrint(),
+            avgBudgetSpilloversFirstIterationInstance = DataCapturing.budgetSpilloversFirstIterationInstance.averageToPrint(),
+            avgBudgetSpilloversInstance = DataCapturing.budgetSpilloversInstance.averageToPrint(),
+            avgBudgetSpilloverIterationsInstance = DataCapturing.budgetSpilloverIterationsInstance.averageToPrint()
         )
     }
 
@@ -106,6 +113,8 @@ data class ExperimentSpecification(
             eliminationRevenueWeight = eliminationRevenueWeight,
             eliminationSparsityWeight = eliminationSparsityWeight,
             budgetDist = budgetDist,
+            budgetWeight = ConfigProvider.config.parameter.budgetWeight.getResultBigDecimal(),
+            maxBudgetFactor = ConfigProvider.config.parameter.maxBudgetFactor.getResultBigDecimal(),
             avgClusterSize = DataCapturing.clusterSizes.averageToPrint(),
             avgNodesInDeadCluster = DataCapturing.nodesInDeadCluster.averageToPrint(),
             avgRevenueInDeadCluster = DataCapturing.revenueInDeadCluster.averageToPrint(),
@@ -113,7 +122,12 @@ data class ExperimentSpecification(
             avgClustersIncludedCompletely = DataCapturing.clustersIncludedCompletely.averageToPrint(),
             avgPercentageBudgetUnused = DataCapturing.percentageBudgetUnused.averageToPrint(),
             avgPercentageClusterExcluded = DataCapturing.fractionClustersExcluded.averageToPrint(),
-            avgPercentageClusterRevenueExcluded = DataCapturing.fractionClusterRevenueExcluded.averageToPrint()
+            avgPercentageClusterRevenueExcluded = DataCapturing.fractionClusterRevenueExcluded.averageToPrint(),
+            avgBudgetDistDefaulted = (DataCapturing.defaultToEqualBudget.toDouble() / (runs.toDouble() * 11.0)).getResultBigDecimal(), //todo fix hardcoded 11
+            avgBudgetSpilloverBudgetFirstIteration = DataCapturing.budgetSpilloverBudgetFirstIteration.averageToPrint(),
+            avgBudgetSpilloversFirstIteration = DataCapturing.budgetSpilloversFirstIteration.averageToPrint(),
+            avgBudgetSpillovers = DataCapturing.budgetSpillovers.averageToPrint(),
+            avgBudgetSpilloverIterations= DataCapturing.budgetSpilloverIterations.averageToPrint()
         )
     }
 
@@ -124,7 +138,7 @@ data class ExperimentSpecification(
     }
 
     private fun Double.getResultBigDecimal(): BigDecimal {
-        return if (this.isNaN()) BigDecimal.ZERO else BigDecimal(this).setScale(2, RoundingMode.HALF_UP)
+        return if (this.isNaN() || this.isInfinite()) BigDecimal.ZERO else BigDecimal(this).setScale(2, RoundingMode.HALF_UP)
     }
 
 }

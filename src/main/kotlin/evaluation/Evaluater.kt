@@ -23,7 +23,6 @@ class Evaluater {
         DataCapturing.addClustersIncludedCompletely(clusterPath.filter { it.size <= it.solutionList.size - 1 }.size , clusterPath.size)
         DataCapturing.addPercentageBudgetUnused(totalCost, problemSpace.metaData.costLimit)
 
-        visualizer.plotGraph(problemSpace.nodeMap, clusters, name, totalRevenue)
         logger.info("------ FINAL RESULTS ------")
         logger.info("Final path: ${finalPath.map { it.id }}")
         logger.info("Total revenue: $totalRevenue")
